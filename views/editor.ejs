@@ -1,0 +1,32 @@
+
+
+  <button onclick="onDownload()">Download</button><br>
+  <div id="keycatch">
+    <canvas id="mset" tabindex="1"
+            height="200"
+            style="border:1px solid; font:32pt bold Courier">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js">
+  </script>
+  <script src="/collabed/fontmetrics.js"></script>
+
+  <script type="module" src="/loadEditor/<%= room %>"></script>
+
+  <script>
+
+function onDownload(){
+  const content = window.ed1.state.ddll_lines().join("\n")
+  download(content,'download.txt','text/plain')
+}
+
+function download(content, fileName, contentType) {
+ const a = document.createElement("a");
+ const file = new Blob([content], { type: contentType });
+ a.href = URL.createObjectURL(file);
+ a.download = fileName;
+ a.click();
+}
+
+
+  </script>

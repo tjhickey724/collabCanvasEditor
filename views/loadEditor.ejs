@@ -1,0 +1,9 @@
+import {TextWindow} from '/collabed/TextWindow.js'
+import {CanvasEditor} from '/collabed/CanvasEditor.js'
+export {ed1,tw,ddllSpec}
+
+const ddllSpec= {namespace:"<%= namespace %>", documentId:"<%= documentId %>"}
+const tw = new TextWindow(ddllSpec)
+
+const ed1 = new CanvasEditor(mset,tw)
+window.ed1 = ed1
