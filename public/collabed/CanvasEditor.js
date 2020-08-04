@@ -105,7 +105,6 @@ class CanvasEditor{
       this.lineDescent = this.fontSize.descent
       let numRows = Math.floor(this.msetCanvas.height/this.lineHeight);
       let numCols = Math.floor(this.msetCanvas.width/(this.charWidth))
-      this.state.recenterView()
       this.state.setRowsCols(numRows,numCols)
 
       return this.ctx.measureText(this.letters);
@@ -191,7 +190,8 @@ class CanvasEditor{
 
       for (let i =0; i<this.state.lines.length; i++){
         //console.log("in loop over i")
-        console.log(`IN printmsetcanvas: i=${i} len = ${this.state.lines.length}`)
+        //console.log(`IN printmsetcanvas: i=${i} len = ${this.state.lines.length}`)
+        //console.log(`lines[i]=${this.state.lines[i]}`)
         let line =this.state.lines[i].substring(colOffset,colOffset+this.state.cols+5)
         //console.log(`fullline = ${this.state.lines[i]} colOffset = ${colOffset} numCols=${this.state.cols}`)
         //console.log(`line= ${line}`)
