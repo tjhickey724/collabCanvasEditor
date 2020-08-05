@@ -127,7 +127,7 @@ class CanvasEditor{
 
     addKeyPress(event){
       //console.log('in addKeyPress')
-      this.state.printState()
+      //this.state.printState()
       const key = event.key
       let state = this.state
       if (event.ctrlKey){
@@ -145,26 +145,28 @@ class CanvasEditor{
         this.state.moveCursorDown()
         return
       } else if (key=='Backspace'){
+        this.state.printState('before deleting')
         this.state.removeCharBeforeCursorPos()
+        this.state.printState('after deleting')
         return
       } else if (key=='Enter'){
         this.state.printState('before inserting CR')
         this.state.insertCharAtCursorPos('\n')
-        //console.log("**** state after hitting enter")
-        //this.state.printState()
+        this.state.printState("**** state after hitting enter")
         return
       } else if (this.allLetters.indexOf(key)<0) {
         // don't handle anything but printable characters, backspace, arrows, and enter
         return
       } else {
         //console.log("about to insert char")
-        this.state.printState('before inserting non-CR')
+        this.state.printState('before inserting non-CR:'+key)
         this.state.insertCharAtCursorPos(key)
+        this.state.printState('after inserting non-CR:'+key)
         //console.log("**** state after inserting")
 
       }
       //console.log(`addKeyPress{${key},${state}} is complete`)
-      this.state.printState()
+      //this.state.printState()
     }
 
 
