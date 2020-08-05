@@ -49,8 +49,8 @@ class TextWindow{
 
     In particular it keeps track of
     this.lines = the list of lines which are (at least partly) visible on the screen
-    this.windowOffset = the position before the first character of the first "visible" line
-    this.lastWindowOffsetPos = the position after the last visible character
+    this.viewStart = the position before the first character of the first "visible" line
+    this.viewEnd = the position after the last visible character
     this.docSize = the total number of characters in the document
     this.cursorPos = the position right before the cursor
     this.rows = the number of visible rows
@@ -64,8 +64,8 @@ class TextWindow{
   constructor(ddllSpec){
 
     // these are the necessary state variables
-    this.windowOffset = 0  // the position of 1st visible character in the windowOffset
-    this.lastWindowOffsetPos = 0
+    this.viewStart = 0  // the position of 1st visible character in the viewStart
+    this.viewEnd = 0
     this.cursorPos = 0 //
     this.rows = 10
     this.cols = 80
@@ -123,19 +123,19 @@ class TextWindow{
               //console.log("skipping my own op")
               return
             }
-            // adjust the windowOffset and cursorPos and docSize
+            // adjust the viewStart and cursorPos and docSize
             this.docSize++
-            if (pos<this.windowOffset){
-              this.windowOffset++
-              this.lastWindowOffsetPos++
+            if (pos<this.viewStart){
+              this.viewStart++
+              this.viewEnd++
               this.cursorPos++
             } else if (pos <= this.cursorPos){
               this.cursorPos++
-              this.lastWindowOffsetPos++
+              this.viewEnd++
               this.reloadLinesFAST()
               this.redraw()
-            }else if (pos <= this.lastWindowOffsetPos){
-              this.lastWindowOffsetPos++
+            }else if (pos <= this.viewEnd){
+              this.viewEnd++
               this.reloadLinesFAST()
               this.redraw()
             }
@@ -146,19 +146,19 @@ class TextWindow{
               //console.log("skipping my own op")
               return
             }
-            // adjust the windowOffset and cursorPos and docSize
+            // adjust the viewStart and cursorPos and docSize
             this.docSize--
-            if (pos<this.windowOffset){
-              this.windowOffset--
+            if (pos<this.viewStart){
+              this.viewStart--
               this.cursorPos--
-              this.lastWindowOffsetPos--
+              this.viewEnd--
             } else if (pos <= this.cursorPos){
               this.cursorPos--
-              this.lastWindowOffsetPos--
+              this.viewEnd--
               this.reloadLinesFAST()
               this.redraw()
-            }else if (pos <= this.lastWindowOffsetPos){
-              this.lastWindowOffsetPos--
+            }else if (pos <= this.viewEnd){
+              this.viewEnd--
               this.reloadLinesFAST()
               this.redraw()
             }
@@ -200,7 +200,7 @@ EDITOR STATE: ${new Date()}
 rows=${this.rows} cols=${this.cols}
 rowOffset=${this.rowOffset} numRows=${this.lines.length}
 colOffset = ${this.colOffset}
-windowOffset=${this.windowOffset} lastWindowOffset=${this.lastWindowOffsetPos} this=${this}
+viewStart=${this.viewStart} viewEnd=${this.viewEnd} this=${this}
 lastRow = ${this.lastRow}
 lines = ${JSON.stringify(this.lines,null,2)}
 ddl_lines = ${JSON.stringify(this.ddll_lines(),null,2)}
@@ -209,7 +209,7 @@ cursorPos = ${this.cursorPos}
 docSize = ${this.docSize}
 **********************\n`)
 
-    //let lines0 = this.reloadLinesFAST(this.windowOffset,this.lastWindowOffset)
+    //let lines0 = this.reloadLinesFAST(this.viewStart,this.lastviewStart)
     //console.log(`lines0 = ${JSON.stringify(lines0,null,2)}`)
   }
 
@@ -220,7 +220,7 @@ docSize = ${this.docSize}
     if (this.ddll.msetTree.toList2){
       console.log(`toList2=${JSON.stringify(this.ddll.msetTree.toList2())}`)
     }
-    console.log(`wo=${this.windowOffset} lwo=${this.lastWindowOffsetPos} cursorPos=${this.cursorPos}\nds=${this.docSize} rows=${this.rows} cols=${this.cols}\nrowOffset=${this.rowOffset} colOffset=${this.colOffset}`)
+    console.log(`wo=${this.viewStart} lwo=${this.viewEnd} cursorPos=${this.cursorPos}\nds=${this.docSize} rows=${this.rows} cols=${this.cols}\nrowOffset=${this.rowOffset} colOffset=${this.colOffset}`)
   }
 /*
   moveCursor(k){
@@ -248,24 +248,24 @@ docSize = ${this.docSize}
     const start=Math.max(0,row-this.rows+1) //earliest start with cursorPos in view
     console.log(`row,col,start= ${JSON.stringify([row,col,start])}`)
     if (this.lines.length != this.rows) {
-        // move windowOffset up to the starting row
+        // move viewStart up to the starting row
         for (let i=0; i<start; i++){
-          this.windowOffset += this.lines[i].length + 1
+          this.viewStart += this.lines[i].length + 1
         }
         // slice away any extra lines at the end
         this.lines = this.lines.slice(start,start+this.rows)
-        // recalculate lastWindowOffset
-        this.lastWindowOffset=0
+        // recalculate viewEnd
+        this.viewEnd=0
         for (let i=0; i<Math.min(this.rows,this.lines.length); i++){
-          this.lastWindowOffset += this.lines[i].length  + 1
+          this.viewEnd += this.lines[i].length  + 1
         }
-        this.lastWindowOffset -= 1 // move it to the end of the last row ...
+        this.viewEnd -= 1 // move it to the end of the last row ...
 
         // pull in extra rows if needed (e.g. if text size is shrunk)
         for(let i=0; i<this.rows; i++){
-          if (this.lastWindowOffset<this.docSize){
-            this.lines[i] = this.getLineContainingPosFAST(this.lastWindowOffset+1)
-            this.lastWindowOffset += this.lines[i].length+1
+          if (this.viewEnd<this.docSize){
+            this.lines[i] = this.getLineContainingPosFAST(this.viewEnd+1)
+            this.viewEnd += this.lines[i].length+1
           }
         }
     }
@@ -291,27 +291,27 @@ docSize = ${this.docSize}
     this.cursorPos += 1
 
     //this.cursorPos = Math.max(0,Math.min(this.cursorPos,this.docSize))
-    if (this.cursorPos > this.lastWindowOffsetPos) {
-      // pull in new line ... make sure this works when lastWindowOffsetPos=docSize
-      const [line] = this.getLineContainingPosFAST(this.lastWindowOffsetPos+1)
+    if (this.cursorPos > this.viewEnd) {
+      // pull in new line ... make sure this works when viewEnd=docSize
+      const [line] = this.getLineContainingPosFAST(this.viewEnd+1)
       console.log(`new line is ${JSON.stringify(line,null,2)}`)
-      // move the windowOffset to the beginning of the previous line
-      //this.windowOffset += this.lines[0].length + 1
+      // move the viewStart to the beginning of the previous line
+      //this.viewStart += this.lines[0].length + 1
 
 
-      this.lastWindowOffsetPos += line.length+1
+      this.viewEnd += line.length+1
       this.lines = this.lines.concat(line)
       this.colOffset=0
       this.printOffsetData()
 
       if (this.lines.length>=this.rows){
-        // if the view is full, then move the windowOffset up
+        // if the view is full, then move the viewStart up
         // to the end of the 2nd to the last line
         const firstLine = this.lines[0]
-        this.windowOffset += firstLine.length+1
+        this.viewStart += firstLine.length+1
         this.lines = this.lines.slice(1)
       }
-      console.log(`wo=${this.windowOffset} lwo=${this.lastWindowOffsetPos}`)
+      console.log(`wo=${this.viewStart} lwo=${this.viewEnd}`)
       // add the new line to the front
 
       this.printOffsetData()
@@ -341,20 +341,20 @@ docSize = ${this.docSize}
     //this.printOffsetData()
     this.cursorPos -= 1
     this.cursorPos = Math.max(0,Math.min(this.cursorPos,this.docSize))
-    if (this.cursorPos < this.windowOffset){
+    if (this.cursorPos < this.viewStart){
       // pull in new line
-      const [line] = this.getLineContainingPosFAST(this.windowOffset-2)
+      const [line] = this.getLineContainingPosFAST(this.viewStart-2)
       //console.log(`new line is ${JSON.stringify(line,null,2)}`)
-      // move the windowOffset to the beginning of the previous line
-      this.windowOffset -= line.length + 1
+      // move the viewStart to the beginning of the previous line
+      this.viewStart -= line.length + 1
 
       if (this.lines.length>=this.rows){
-        // if the view is full, then move the lastWindowOffsetPos up
+        // if the view is full, then move the viewEnd up
         // to the end of the 2nd to the last line
         const lastLine = this.lines[this.lines.length-1]
-        this.lastWindowOffsetPos -= lastLine.length+1
+        this.viewEnd -= lastLine.length+1
       }
-      //console.log(`wo=${this.windowOffset} lwo=${this.lastWindowOffsetPos}`)
+      //console.log(`wo=${this.viewStart} lwo=${this.viewEnd}`)
       // add the new line to the front
       this.lines = line.concat(this.lines)
       // possibly remove the last line
@@ -389,13 +389,13 @@ docSize = ${this.docSize}
     this.printOffsetData()
     //console.log("moveCursorUp")
     //console.log(JSON.stringify(this.lines,null,2))
-    if (this.windowOffset==0 && this.cursorPos<this.lines[0].length){
+    if (this.viewStart==0 && this.cursorPos<this.lines[0].length){
       //console.log("can't move up from first line")
       return
     }
-    if (this.cursorPos-this.windowOffset>this.lines[0].length){
+    if (this.cursorPos-this.viewStart>this.lines[0].length){
       //console.log("moving within the window)")
-      // here we move up without changing the windowOffset
+      // here we move up without changing the viewStart
       const [row,col] = this.getVisRowColFAST(this.cursorPos)
       //console.log(`grcFast => row col = ${row} ${col}`)
       const prevLineLen = this.lines[row-1].length
@@ -413,23 +413,23 @@ docSize = ${this.docSize}
       //console.log("pulling in a new line")
       const [row,col] = this.getVisRowColFAST(this.cursorPos)
       //console.log(`row col = ${row} ${col}`)
-      if (this.windowOffset==0){
+      if (this.viewStart==0){
         //console.log("can't move up from first line")
         return
       }
       // here we change the window offset
       // pull in the previous line
-      const [line] = this.getLineContainingPosFAST(this.windowOffset-2)
+      const [line] = this.getLineContainingPosFAST(this.viewStart-2)
       //console.log(`new line is ${JSON.stringify(line,null,2)}`)
-      // move the windowOffset to the beginning of the previous line
-      this.windowOffset -= line.length + 1
+      // move the viewStart to the beginning of the previous line
+      this.viewStart -= line.length + 1
 
       if (this.lines.length>=this.rows){
-        // if the view is full, then move the lastWindowOffsetPos up
+        // if the view is full, then move the viewEnd up
         // to the end of the 2nd to the last line
-        this.lastWindowOffsetPos -= this.lines[this.rows-1].length+1
+        this.viewEnd -= this.lines[this.rows-1].length+1
       }
-      //console.log(`wo=${this.windowOffset} lwo=${this.lastWindowOffsetPos}`)
+      //console.log(`wo=${this.viewStart} lwo=${this.viewEnd}`)
       // add the new line to the front
       this.lines = line.concat(this.lines)
       // possibly remove the last line
@@ -477,7 +477,7 @@ docSize = ${this.docSize}
     console.log("moveCursorDown")
     console.log(JSON.stringify(this.lines,null,2))
     const lastLine = this.lines[this.lines.length-1]
-    if (this.lastWindowOffsetPos==this.docSize
+    if (this.viewEnd==this.docSize
         &&
         this.docSize <= this.cursorPos + lastLine.length) {
       console.log("can't move below the last line")
@@ -487,7 +487,7 @@ docSize = ${this.docSize}
     console.log(`grcFast => row col = ${row} ${col}`)
     if (row<this.lines.length-1){
       console.log("moving within the window)")
-      // here we move up without changing the windowOffset
+      // here we move up without changing the viewStart
       const nextLineLen = this.lines[row+1].length
       console.log(`next line length = ${nextLineLen}`)
       const newRow = row+1 + this.rowOffset
@@ -497,9 +497,9 @@ docSize = ${this.docSize}
            + newCol
       console.log(`new cursorPos=${this.cursorPos}`)
       console.log(`new cursor = ${newRow} ${newCol}`)
-      if (this.cursorPos<this.windowOffset
+      if (this.cursorPos<this.viewStart
           ||
-          this.cursorPos > this.lastWindowOffsetPos)
+          this.cursorPos > this.viewEnd)
       {
             alert("ERROR in move cursor down.. cursor out of range")
       }
@@ -508,23 +508,23 @@ docSize = ${this.docSize}
     } else {
       console.log("pulling in a new line from last line")
       const curLine = this.lines[row]
-      const [line] = this.getLineContainingPosFAST(this.lastWindowOffsetPos+1)
+      const [line] = this.getLineContainingPosFAST(this.viewEnd+1)
       console.log(`new line is ${JSON.stringify(line,null,2)}`)
-      // move the windowOffset to the beginning of the previous line
-      //this.windowOffset += this.lines[0].length + 1
+      // move the viewStart to the beginning of the previous line
+      //this.viewStart += this.lines[0].length + 1
 
 
-      this.lastWindowOffsetPos += line.length+1
+      this.viewEnd += line.length+1
       // add the new line to the front
       this.lines = this.lines.concat(line)
 
       if (this.lines.length>this.rows){
-        // if the view is full, then move the windowOffsetPos up
+        // if the view is full, then move the viewEnd up
         // to the beginning of the 2nd line
-        this.windowOffset += this.lines[0].length+1
+        this.viewStart += this.lines[0].length+1
         this.lines = this.lines.slice(1,this.rows)
       }
-      console.log(`wo=${this.windowOffset} lwo=${this.lastWindowOffsetPos}`)
+      console.log(`wo=${this.viewStart} lwo=${this.viewEnd}`)
 
 
       // adjust the cursor position
@@ -536,9 +536,9 @@ docSize = ${this.docSize}
           + Math.min(col,line.length)
       console.log(`cp=${this.cursorPos}`)
 
-      if (this.cursorPos<this.windowOffset
+      if (this.cursorPos<this.viewStart
           ||
-          this.cursorPos > this.lastWindowOffsetPos)
+          this.cursorPos > this.viewEnd)
       {
             alert("ERROR in move cursor down")
       }
@@ -589,7 +589,7 @@ getPosFAST(row,col) {
   const lines = this.lines
   //console.log(`getPosSLOW(${row},${col})`)
   //console.log(`lines=${JSON.stringify(lines,null,2)}`)
-  let pos = this.windowOffset
+  let pos = this.viewStart
   row = Math.min(row,lines.length)
   for(let i=0; i<row; i++){
     pos += lines[i].length+1
@@ -607,11 +607,11 @@ getPosFAST(row,col) {
   getCursorRowCol(){
     // we assume this is only called when the cursor is in the view
 
-    if (this.cursorPos < this.windowOffset || this.cursorPos > this.lastWindowOffsetPos){
+    if (this.cursorPos < this.viewStart || this.cursorPos > this.viewEnd){
       console.log(`ERROR: in getCursorRowCol(${this.cursorPos})`)
       return this.getCursorRowColSLOW()
     }
-    let p=this.windowOffset
+    let p=this.viewStart
     let prevOffset=0
     let row = 0
     //console.log(`this.lines = ${JSON.stringify(this.lines,null,2)} row=${row}`)
@@ -643,11 +643,11 @@ getPosFAST(row,col) {
       //console.log(`ERROR: in getCursorRowCol(${this.cursorPos})`)
       //throw new Error("gcrSLOW")
     }
-    if (pos<this.windowOffset || pos>this.lastWindowOffsetPos){
-      //console.log(`calling grcSLOW(${pos}) wo=${this.windowOffset} lwo=${this.lastWindowOffsetPos}`)
+    if (pos<this.viewStart || pos>this.viewEnd){
+      //console.log(`calling grcSLOW(${pos}) wo=${this.viewStart} lwo=${this.viewEnd}`)
       throw new Error("getRowColSLOW should not ever be called!")
     }
-    pos = pos - this.windowOffset
+    pos = pos - this.viewStart
     let lines = this.lines
     let p=0
     let prevOffset=0
@@ -709,9 +709,9 @@ getPosFAST(row,col) {
   */
 
 /*
-  lastWindowOffset(){
-    //console.log(`lastWindowOffset`)
-    let pos = this.windowOffset
+  lastviewStart(){
+    //console.log(`lastviewStart`)
+    let pos = this.viewStart
     for (let line of this.lines) {
       pos += line.length + 1
     }
@@ -726,7 +726,7 @@ getPosFAST(row,col) {
     this.printState()
 
     let allLines = this.ddll_lines()
-    if (this.windowOffset <= this.cursorPos && this.cursorPos<=this.lastWindowOffsetPos){
+    if (this.viewStart <= this.cursorPos && this.cursorPos<=this.viewEnd){
       this.reloadLinesFAST()
       return
     }
@@ -745,7 +745,7 @@ getPosFAST(row,col) {
     let cursorCol = this.cursorPos - cursorRowOffset
     this.cursor = [cursorRow,cursorCol]
     this.rowOffset = cursorRow
-    this.windowOffset = cursorRowOffset
+    this.viewStart = cursorRowOffset
     this.reloadLinesFAST()
   }
 
@@ -764,8 +764,8 @@ getPosFAST(row,col) {
   */
 
   reloadLinesFAST(startPos,endPos){  // SLOW
-    startPos = startPos || this.windowOffset
-    endPos = endPos || this.lastWindowOffsetPos
+    startPos = startPos || this.viewStart
+    endPos = endPos || this.viewEnd
     //console.log(`reloadLinesFAST(${startPos},${endPos})`)
     //console.log(JSON.stringify(this.ddll_lines(),null,2))
      // here we make sure this.lines is correct
@@ -897,8 +897,8 @@ getPosFAST(row,col) {
 /*
   centerView(){
     // first we make sure the row containing the cursor is visible
-    if (this.cursorPos < this.windowOffset ||
-        this.cursorPos > this.lastWindowOffset()) {
+    if (this.cursorPos < this.viewStart ||
+        this.cursorPos > this.lastviewStart()) {
       this.updateLinesAroundCursorPosSLOW()
     }
     this.cursor = this.getCursorRowCol()
@@ -921,19 +921,19 @@ getPosFAST(row,col) {
         this.lines.length < this.rows
        )
     {
-      this.lastWindowOffsetPos += 1
+      this.viewEnd += 1
       //this.lines = this.lines.slice(0,this.rows)
     } else // char=='\n' and this.lines.length == this.rows
       if (
-       this.cursorPos < this.lastWindowOffsetPos-this.lines[this.rows-1].length
+       this.cursorPos < this.viewEnd-this.lines[this.rows-1].length
      ){ // this is the case that the CR pushes the last line off the screen
-       this.lastWindowOffsetPos -= this.lines[this.rows-1].length
+       this.viewEnd -= this.lines[this.rows-1].length
     } else {
       // in this case, the user is inserting a CR on the last line in the
       // viewing window and we will need to split the last line into two
       // and remove the first line
-      this.lastWindowOffsetPos  += 1
-      this.windowOffset += this.lines[0].length+1
+      this.viewEnd  += 1
+      this.viewStart += this.lines[0].length+1
     }
 
 
@@ -956,28 +956,28 @@ getPosFAST(row,col) {
     //console.log("after:\n"+JSON.stringify(this.ddll_lines(),null,2))
     this.docSize-=1
     this.cursorPos -= 1
-    this.lastWindowOffsetPos -= 1
+    this.viewEnd -= 1
     this.printOffsetData()
 
-    if (this.cursorPos < this.windowOffset){
+    if (this.cursorPos < this.viewStart){
       // the cursor is at the end of what was the previous line
       // we have deleted the CR between the lines ...
       //console.log("We are pulling in a new line!")
       const [line,startPos,endPos]
           = this.getLineContainingPosFAST(this.cursorPos)
-      this.windowOffset = startPos
+      this.viewStart = startPos
       if (this.lines.length == this.rows){
         // remove the last line in the buffer
-        this.lastWindowOffsetPos -= this.lines[this.rows-1].length+1
+        this.viewEnd -= this.lines[this.rows-1].length+1
       }
       this.printOffsetData()
     } else if (char=='\n'){
-      if (this.lines.length == this.rows && this.docSize>this.lastWindowOffsetPos){
-        // pull in another line into the buffer and adjust lastWindowOffsetPos
+      if (this.lines.length == this.rows && this.docSize>this.viewEnd){
+        // pull in another line into the buffer and adjust viewEnd
         const [lastline,startP,endP]
-            = this.getLineContainingPosFAST(this.lastWindowOffsetPos+1)
+            = this.getLineContainingPosFAST(this.viewEnd+1)
 
-        this.lastWindowOffsetPos = endP
+        this.viewEnd = endP
       }
       this.printOffsetData()
     }
