@@ -132,12 +132,10 @@ class TextWindow{
             } else if (pos <= this.cursorPos){
               this.cursorPos++
               this.lastWindowOffsetPos++
-              this.recenterView()
               this.reloadLinesFAST()
               this.redraw()
             }else if (pos <= this.lastWindowOffsetPos){
               this.lastWindowOffsetPos++
-              this.recenterView()
               this.reloadLinesFAST()
               this.redraw()
             }
@@ -157,12 +155,10 @@ class TextWindow{
             } else if (pos <= this.cursorPos){
               this.cursorPos--
               this.lastWindowOffsetPos--
-              this.recenterView()
               this.reloadLinesFAST()
               this.redraw()
             }else if (pos <= this.lastWindowOffsetPos){
               this.lastWindowOffsetPos--
-              this.recenterView()
               this.reloadLinesFAST()
               this.redraw()
             }
@@ -229,7 +225,7 @@ docSize = ${this.docSize}
 /*
   moveCursor(k){
     // this advances the cursor forward or backward in the viewing region
-    console.log(`moveCursor(${k})`)
+    //console.log(`moveCursor(${k})`)
     this.printOffsetData()
     this.cursorPos += k
     this.cursorPos = Math.max(0,Math.min(this.cursorPos,this.docSize))

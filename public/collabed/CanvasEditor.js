@@ -1,7 +1,7 @@
 import {TextWindow} from './TextWindow.js'
 export {CanvasEditor}
 /*
-The Canvas Editor takes a canvas DOM objects, mset,
+The Canvas Editor takes a canvas DOM object, mset,
 and a TextWindow object representing the state of the document.
 It responds to canvas events by calling methods on the TextWindow
 object to update its state, and it redraws the screen using data
@@ -58,12 +58,14 @@ class CanvasEditor{
 
     // here is how we can get the key which is pressed
     this.msetCanvas.addEventListener('keydown', function(event) {
+        msetCE.getFontSize()
         msetCE.addKeyPress(event);
         msetCE.redrawmsetCanvas();
             });
 
     // here is how we can get the position of the mouseclick
     this.msetCanvas.addEventListener('mousedown', function(event){
+        msetCE.getFontSize()
         let row = Math.floor(event.offsetY/msetCE.lineHeight)+
                              msetCE.state.rowOffset
         let col = Math.round(event.offsetX/(msetCE.charWidth)) +
@@ -77,6 +79,9 @@ class CanvasEditor{
     });
 
     // When the window is resized it changes the size of the canvas to fit the window
+    // This can be expensive as it needs to read it new lines if it is expanded
+    // Also when the user changes the font-size this is a kind of resizing!
+    // We can test the font size before every operation!
     window.addEventListener('resize', function(event){
       msetCE.msetCanvas.width = window.innerWidth*0.9
       msetCE.msetCanvas.height = window.innerHeight*0.9
