@@ -66,11 +66,12 @@ class CanvasEditor{
     // here is how we can get the position of the mouseclick
     this.msetCanvas.addEventListener('mousedown', function(event){
         msetCE.getFontSize()
-        let row = Math.floor(event.offsetY/msetCE.lineHeight)+
-                             msetCE.state.rowOffset
+        let row = Math.floor(event.offsetY/msetCE.lineHeight)
+                             //+ msetCE.state.rowOffset
         let col = Math.round(event.offsetX/(msetCE.charWidth)) +
                              msetCE.state.colOffset
         //console.log(`mousedown row=${row} col=${col} cursorPos=${msetCE.state.cursorPos}`)
+        // the row corresponds to the row in this.state.lines 
         const pos = msetCE.state.getPosFAST(row,col)
         msetCE.state.cursorPos = pos
         //console.log(`new cursorPos is ${pos}`)

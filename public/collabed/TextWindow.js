@@ -672,13 +672,18 @@ getPosFAST(row,col) {
   // this is used when making a mouse click to determine the position
   // in the document, so the row could be too small or too large
   // as could the column. We begin by normalizing the row value
+  console.log(`getPosFAST(${row},${col})`)
+  this.printState()
+
   if (row<0) {
     row=0
   } else if (row>=this.lines.length){
     row = this.lines.length-1
   }
+  //console.log(JSON.stringify(this.lines,null,2))
   // and then the column value
-  col = Math.min(col,this.lines[row])
+  col = Math.min(col,this.lines[row].length)
+  //console.log(`row=${row} col=${col}`)
   //console.log(`getPosSLOW(${row},${col})`)
   //console.log(`lines=${JSON.stringify(lines,null,2)}`)
   // we start at the position at the beginning of the first line of the view
@@ -687,6 +692,7 @@ getPosFAST(row,col) {
   // for each line before the specified row
   // we add the characters in the row and the CR at the end
   for(let i=0; i<row; i++){
+    //console.log(`i=${i} this.lines[i]=${JSON.stringify(this.lines[i],null,2)}`)
     pos += this.lines[i].length+1
   }
   // for the row itself, we add the column to get the position
