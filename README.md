@@ -1,6 +1,6 @@
 # collabCanvasEditor
 
-This is a demo of a canvas-based collaborative editor that runs in the browser.
+This is a pre-alpha demo of a canvas-based collaborative editor that runs in the browser.
 
 ## Install and Run
 You can start up the server by downloading the code and starting it up as usual for Express apps:
