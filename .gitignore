@@ -2,3 +2,5 @@
 node_modules
 notes.txt
 env.sh
+auth.sh
+auth.js
