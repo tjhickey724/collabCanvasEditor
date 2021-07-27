@@ -61,8 +61,24 @@ const configPassport = function(passport) {
     const clientSecret = configAuth.googleAuth.clientSecret
     const callbackURL = configAuth.googleAuth.callbackURL
     */
+    let configAuth={}
+/*  switch the comments to use either environment variables or the auth.js file
+    to define the clientID etc.
+    */
+//      configAuth = require('../auth');
+/*   */
+      configAuth = {
+        googleAuth:{
+          clientID: process.env.clientID,
+          clientSecret: process.env.clientSecret,
+          callbackURL: process.env.callbackURL}
+        }
+        console.log('process.env =')
+        console.dir(process.env)
 
+    /*
     var configAuth = require('../auth');
+    */
     const clientID = configAuth.googleAuth.clientID
     const clientSecret = configAuth.googleAuth.clientSecret
     const callbackURL = configAuth.googleAuth.callbackURL

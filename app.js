@@ -21,7 +21,14 @@ const httpServer = http.Server(app)
 
 const io = require('socket.io')(httpServer);
 
-var configAuth = require('./auth');
+let configAuth = null;
+
+console.log('process.env =')
+console.dir(process.env)
+
+//configAuth = require('./auth');
+configAuth = {mongoDB_URI:process.env.mongodb_URI}
+
 const mongoDB_URI = configAuth.mongoDB_URI
 
 const mongoose = require( 'mongoose' );
