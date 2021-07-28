@@ -99,7 +99,7 @@ class TextWindow{
         // apply the editorCallBack
         this.editorCallbacks2.apply(null,editOp)
         if (!this.opQueue.isEmpty()){
-          setTimeout(this.processOps,0)
+          setTimeout(this.processOps,1)
         }
         // if opQueue is not empty, then setTimeout again...
       }

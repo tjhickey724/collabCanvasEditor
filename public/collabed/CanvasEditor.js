@@ -71,7 +71,7 @@ class CanvasEditor{
         let col = Math.round(event.offsetX/(msetCE.charWidth)) +
                              msetCE.state.colOffset
         //console.log(`mousedown row=${row} col=${col} cursorPos=${msetCE.state.cursorPos}`)
-        // the row corresponds to the row in this.state.lines 
+        // the row corresponds to the row in this.state.lines
         const pos = msetCE.state.getPosFAST(row,col)
         msetCE.state.cursorPos = pos
         //console.log(`new cursorPos is ${pos}`)
@@ -222,6 +222,7 @@ class CanvasEditor{
     drawCursor(){
 
       const [row,col] = this.state.getVisRowColFAST(this.state.cursorPos)
+      console.log(`in drawCursor, row=${row} col=${col}`)
       const visibleRow = row
       const visibleCol = col-this.state.colOffset
 
