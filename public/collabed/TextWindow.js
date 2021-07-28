@@ -766,9 +766,11 @@ getPosFAST(row,col) {
     // charsToGo is always >0
     let row=0
     while(charsToGo>=0){
+
       if (row >= this.lines.length) {
         throw new Error(`gvrcF(${pos}) vs=${JSON.stringify(this.lines,null,2)}`)
       }
+      console.log(`charsToGo=${charsToGo} row=${row} line=${this.lines[row]}`)
       //console.log(JSON.stringify([row,charsToGo,this.lines[row]],null,2))
       const line = this.lines[row]
       if (charsToGo > line.length) {
@@ -779,6 +781,7 @@ getPosFAST(row,col) {
         return [row,col]
       }
     }
+    console.log(`in getVisRowCallFast(${pos}) row=${row} charsToGo=${charsToGo} ERROR?? `)
     return [row,0]
     /*
     let lines = this.lines
