@@ -735,6 +735,9 @@ getPosFAST(row,col) {
     // so anything in the first row of the view has row=0
 
     // We assume that pos is in the viewing window
+    console.log(`in getVisRowColFast ${pos}`)
+    this.printState()
+
     if (pos<this.viewStart || pos > this.viewEnd){
       throw new Error(`call to getVisRowColFast(${pos}) out of range [${this.viewStart},${this.viewEnd}]`)
     }
