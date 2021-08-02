@@ -125,6 +125,11 @@ class TextWindow{
               return
             }
             // adjust the viewStart and cursorPos and docSize
+            // TJH 8/2/21 we may need to update colOffset or rowOffset ...
+            // Also reloadLinesFAST might make the lines array too long
+            // i.e. bigger than the window and so we need to remove the last lines
+            // and update viewEnd, or viewStart to keep the curson on the screen...
+            //THIS IS ALL BROKEN!!
             this.docSize++
             if (pos<this.viewStart){
               this.viewStart++
@@ -134,6 +139,7 @@ class TextWindow{
               this.cursorPos++
               this.viewEnd++
               this.reloadLinesFAST()
+              // need to update the data to keep the cursor in the window ...
               this.redraw()
             }else if (pos <= this.viewEnd){
               this.viewEnd++
@@ -902,6 +908,10 @@ getPosFAST(row,col) {
   }
   */
 
+  //TJH 8/2/2021
+  // We probably don't have to call this unless you move the cursor to
+  // a complete different place in the string by scrolling the window ...
+
   reloadLinesFAST(){
     // this uses this.viewStart and this.viewEnd to
     // recreate the this.lines array
@@ -954,6 +964,9 @@ getPosFAST(row,col) {
       // we have the first character, but now we need to process the rest
       // of the characters in the subNode until p==endPos or
       // we have reached the end of the userData
+
+      //TJH 8/2/2021  we can optimize this by using slices of the
+      // userData array instead of iterating one character at a time ..
       for (let q=pos; q<userData.length; q++){
         // get the character
         let c = userData[q]
