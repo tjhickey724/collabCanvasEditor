@@ -93,13 +93,13 @@ class TextWindow{
          setTimeout(this.processOps,0)
 
        }
-    this.processOps = () => {
+    this.processOps = async () => {
       if (!this.opQueue.isEmpty()){
         const editOp = this.opQueue.dequeue()
         // apply the editorCallBack
         this.editorCallbacks2.apply(null,editOp)
         if (!this.opQueue.isEmpty()){
-          this.processOps()
+          await this.processOps()
           //setTimeout(this.processOps,0)
         }
         // if opQueue is not empty, then setTimeout again...
