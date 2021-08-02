@@ -129,7 +129,8 @@ class TextWindow{
             // Also reloadLinesFAST might make the lines array too long
             // i.e. bigger than the window and so we need to remove the last lines
             // and update viewEnd, or viewStart to keep the curson on the screen...
-            //THIS IS ALL BROKEN!!
+            //THIS IS ALL BROKEN!!  it should be adjusting the viewStart, viewEng
+            // and colOffset to keep the cursor visible ...
             this.docSize++
             if (pos<this.viewStart){
               this.viewStart++
@@ -140,6 +141,11 @@ class TextWindow{
               this.viewEnd++
               this.reloadLinesFAST()
               // need to update the data to keep the cursor in the window ...
+              // if elt=='\n' then
+              //   maybe look at getVisRowColFAST to get cursor position
+              //   and then update the state as needed,
+              // of ir cursor row is = cols-1  (i.e. at the right edge)
+              //   then add 1 to colOffset ...
               this.redraw()
             }else if (pos <= this.viewEnd){
               this.viewEnd++
