@@ -79,7 +79,7 @@ class TextWindow{
     this.cursor = [0,0]
     this.rowOffset=0
 
-    this.scrollOffset = 2 // this is for how much you want to scroll when recentering...
+    this.scrollOffset = 1 // this is for how much you want to scroll when recentering...
 
     this.redrawCanvas = ()=> {console.log("redrawing not initialized yet")}
 
@@ -99,7 +99,8 @@ class TextWindow{
         // apply the editorCallBack
         this.editorCallbacks2.apply(null,editOp)
         if (!this.opQueue.isEmpty()){
-          setTimeout(this.processOps,1)
+          this.processOps()
+          //setTimeout(this.processOps,0)
         }
         // if opQueue is not empty, then setTimeout again...
       }
