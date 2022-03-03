@@ -268,20 +268,18 @@ docSize = ${this.docSize}
         // slice away any extra lines at the end
         this.lines = this.lines.slice(start,start+this.rows)
         // recalculate viewEnd
-        this.viewEnd=0
-        for (let i=0; i<Math.min(this.rows,this.lines.length); i++){
-          this.viewEnd += this.lines[i].length  + 1
+        this.viewEnd=this.viewStart
+        for(const line of this.lines){
+          this.viewEnd += line.length + 1
         }
         this.viewEnd -= 1 // move it to the end of the last row ...
 
         // pull in extra rows if needed (e.g. if text size is shrunk)
-        for(let i=0; i<this.rows; i++){
-          if (this.viewEnd<this.docSize){
-            const [line,startP,endP]
-                  = this.getLineContainingPosFAST(this.viewEnd+1)
-            this.lines[i] = line
-            this.viewEnd += this.lines[i].length+1
-          }
+        for(let i=this.lines.length; i<this.rows && this.viewEnd + 1 <= this.docSize; i++){
+          const [line,startP,endP]
+                = this.getLineContainingPosFAST(this.viewEnd+1)
+          this.lines[i] = line
+          this.viewEnd += this.lines[i].length+1
         }
     }
 
@@ -401,12 +399,12 @@ docSize = ${this.docSize}
         const lastLine = this.lines[this.lines.length-1]
         this.viewEnd -= lastLine.length+1
         // and add the first line and remove the last
-        this.lines = line.concat(this.lines)
+        this.lines.unshift(line)
         // remove the last line
         this.lines = this.lines.slice(0,this.rows)
       } else {
         // add the first line, but don't remove any lines
-        this.lines = line.concat(this.lines)
+        this.lines.unshift(line)
       }
 
     } else {
@@ -533,13 +531,13 @@ docSize = ${this.docSize}
         // (except when at the end of the file not terminated by CR)
         this.viewEnd -= this.lines[this.rows-1].length+1
         // add the new line to the front
-        this.lines = line.concat(this.lines)
+        this.lines.unshift(line)
         // remove the last line
         this.lines = this.lines.slice(0,this.rows)
 
       } else {
         // add the new line to the front
-        this.lines = line.concat(this.lines)
+        this.lines.unshift(line)
         // but don't remove any lines at the end
       }
 
@@ -606,7 +604,7 @@ docSize = ${this.docSize}
         //add the new line to the end of this.lines
         this.lines = this.lines.concat(line)
         // slice away the first line from this.lines
-        this.lines = this.lines.slice(1,this.rows)
+        this.lines = this.lines.slice(1)
       } else {
         // then add the new line to the front of this.lines
         this.lines = this.lines.concat(line)
