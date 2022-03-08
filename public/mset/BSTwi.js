@@ -19,10 +19,10 @@ class BSTwi extends DLLwi {
   insert(elt){
     const result =  this.tln.binaryInsert(elt, this.comparator).indexOf()
     if (!isOrdered(this.toList())) {
-      console.log('inserted element: '+elt.user)
-      console.log(`into list ${this.toList().map((x)=>(x.user))}`)
-      console.log(`returning ${result}`)
-      console.dir(result)
+      //console.log('inserted element: '+elt.user)
+      //console.log(`into list ${this.toList().map((x)=>(x.user))}`)
+      //console.log(`returning ${result}`)
+      //console.dir(result)
     }
 
     return result

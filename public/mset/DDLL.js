@@ -2,7 +2,7 @@ import {DLLmset} from './DLLmset.js'
 export {DDLL,Network}
 
 
-console.log("loading MSET")
+//console.log("loading MSET")
 // this creates an io socket on a namespace
 // and creates a new DLLmset object when it gets an 'init' message on the socket
 // The server sends an 'init' message to every new connection, followed by a
@@ -629,8 +629,8 @@ function removeOp(op,oplist){
     }
   }
   if (!found){
-    console.log('bug in remove Op')
-    console.log(JSON.stringify([op,oplist]))
+    //console.log('bug in remove Op')
+    //console.log(JSON.stringify([op,oplist]))
   }
   return newList
 

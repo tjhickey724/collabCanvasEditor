@@ -180,9 +180,9 @@ class DLLwi {
     if (n<0) {
       throw new Error("nth must be called with positive numbers, not "+n)
     } else if (n>=this.size(feature)){
-      console.dir([n,feature,this])
-      console.log(this.tln.toStringIndent(5))
-      console.log(this.toList('count').map((x)=>(x.toString())))
+      //console.dir([n,feature,this])
+      //console.log(this.tln.toStringIndent(5))
+      //console.log(this.toList('count').map((x)=>(x.toString())))
       throw new Error("nth must be called with a number smaller than the size:"+
           "n="+n+" but size("+feature+")="+this.size(feature))
     }
@@ -273,8 +273,8 @@ class ListNode{
     this.hiddenData =val
     this.elementSize = this.dll.sizefn(val)
     if (this.dll.isAVL){
-      console.log("updating the weights after setting the data")
-      console.dir([val,this])
+      //console.log("updating the weights after setting the data")
+      //console.dir([val,this])
       this.tln.updateWeights()  // update the sublistSize for node and all ancestors
     }
 
@@ -439,12 +439,12 @@ class TreeList {
       this.left.printStringIndent(k+4)
     }
 
-    console.log(k+"\n"+(" ".repeat(k)+
+    /*console.log(k+"\n"+(" ".repeat(k)+
         (this.listNode.data.toString()+
          "[s="+JSON.stringify(this.sublistSize)+
          ", h="+this.height
          )+
-       "]\n"))
+       "]\n"))*/
 
     if(this.right){
       this.right.printStringIndent(k+4)
@@ -814,8 +814,8 @@ AND MAKE IT CLEAR AND EASY TO VALIDATE!!
 
     if (newHeight>100) throw new Error("height>100!!")
     if (Math.abs(leftHeight-rightHeight)>2) {
-      console.dir(node)
-      console.log(node.listNode.dll.tln.toStringIndent(5))
+      //console.dir(node)
+      //console.log(node.listNode.dll.tln.toStringIndent(5))
       throw new Error("heights seriously unbalanced!!")
     }
 
@@ -884,19 +884,19 @@ AND MAKE IT CLEAR AND EASY TO VALIDATE!!
     while(node){
       k++
       if ( node.listNode && vals.includes(node.listNode.hiddenData)){
-        console.dir(['loop',node.listNode.hiddenData,vals,this,node,k])
+        //console.dir(['loop',node.listNode.hiddenData,vals,this,node,k])
         throw new Error("infinite loop")
       }
       if (node.height>100){
-        console.log('too tall')
-        console.dir(node)
+        //console.log('too tall')
+        //console.dir(node)
         //node.printStringIndent()
         //console.log(node.toStringIndent(5))
         throw new Error("too tall")
       }
       vals.push(node.listNode?node.listNode.hiddenData:'deleted')
       if (k > 3000) {
-        console.log(vals)
+        //console.log(vals)
         throw new Error()
       }
       // this moves up the tree and adjusts the heights and weights of
@@ -1048,14 +1048,14 @@ class Debug{
   }
   log(n,a){
     if (this.debugging[n]){
-      console.log("in "+n+": \n"+a)
+      //console.log("in "+n+": \n"+a)
     }
   }
 
   dir(n,a){
     if (this.debugging[n]){
-      console.log("in "+n)
-      console.dir(a)
+      //console.log("in "+n)
+      //console.dir(a)
     }
   }
 }
