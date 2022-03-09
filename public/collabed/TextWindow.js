@@ -928,15 +928,11 @@ getPosFAST(row,col) {
     //console.log(JSON.stringify(this.ddll_lines(),null,2))
     //this.printState()
 
-    // first we handle a special case where the document is empty
-    if (this.docSize==0){
+    // first we handle a special case where the document is empty, or the view is about to become empty
+    if (this.docSize==0 || startPos == endPos){
       this.lines = [""]
       return
     }
-
-    /*if (startPos == endPos){
-      //throw new Error(`reloadLinesFAST has an empty view and docSize=${this.docSize}>0`)
-    }*/
 
     // now we know the document is non-empty
     // we will use the ddll "nth" function to pull out the characters
@@ -1269,8 +1265,9 @@ getPosFAST(row,col) {
       //console.log("We are pulling in a new line!")
       const [line,startPos,endPos]
           = this.getLineContainingPosFAST(this.cursorPos)
-      // the beginning of this new line is the new beginning of our view
+      // the beginning and end of this new line is the new beginning and end of our view
       this.viewStart = startPos
+      this.viewEnd = endPos
       // note that we have simply lengthened the first line of this.lines
       // so we don't need to remove any elements from the end!
       //this.printOffsetData()
