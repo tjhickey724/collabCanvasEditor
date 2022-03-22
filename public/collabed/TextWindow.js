@@ -65,7 +65,7 @@ class TextWindow{
 
     // these are the necessary state variables
     this.viewStart = 0  // the position of 1st visible character in the viewStart
-    this.viewEnd = 0
+    this._viewEnd = 0
     this.cursorPos = 0 //
     this.rows = 10
     this.cols = 80
@@ -197,8 +197,16 @@ class TextWindow{
          () => this.ddll.msetTree.toList2('std').join('').split("\n")
 
   }
+  //TODO: remove getter and setter when done debugging
+  get viewEnd(){
+    return this._viewEnd
+  }
 
-
+  set viewEnd(value){
+    this._viewEnd = value
+    //console.log('viewEnd changed to ' + value)
+    //console.trace()
+  }
 
   printState(text){
     if (!this.debugging){
@@ -1265,9 +1273,17 @@ getPosFAST(row,col) {
       //console.log("We are pulling in a new line!")
       const [line,startPos,endPos]
           = this.getLineContainingPosFAST(this.cursorPos)
-      // the beginning and end of this new line is the new beginning and end of our view
+
+      // we need to adjust the column offset as the cursor is now
+      // at the end of the first line in the view
+      this.colOffset = Math.max(0,line.length-this.cols+1)
+
+      // the beginning of this new line is the new beginning of our view
       this.viewStart = startPos
-      this.viewEnd = endPos
+      // due to the deletion, the last character visible on screen now has an index of one less
+      this.viewEnd -= 1;
+
+      this.lines[0] = line
       // note that we have simply lengthened the first line of this.lines
       // so we don't need to remove any elements from the end!
       //this.printOffsetData()
@@ -1276,11 +1292,26 @@ getPosFAST(row,col) {
       // are in this.lines. They will then be merged and we need to
       // pull in another line either at the end if possible
       // and adjust viewEnd accordingly
+      const [row,col] = this.getVisRowColFAST(this.cursorPos)
+
+      // The cursor was at the beginning of this.lines[row+1] before the delete was performed.
+      // After the delete, the cursor has moved up to this.lines[row]. So this.lines[row+1] must be merged onto the
+      // end of this.lines[row], the original this.lines[row+1] deleted, and all subsequent lines shifted up one
+      // position to fill the space.
+      this.lines[row] += this.lines[row + 1]
+      this.lines.splice(row + 1, 1)
+
+      // adjust column offset if necessary
+      if (col > this.colOffset+this.cols || col < this.colOffset) {
+        this.colOffset = Math.max(0, col - this.cols)
+      }
+
       if (this.viewEnd < this.docSize){
         // pull in another line into the buffer and adjust viewEnd
         const [lastline,startP,endP]
             = this.getLineContainingPosFAST(this.viewEnd+1)
 
+        this.lines.push(lastline)
         this.viewEnd = endP
       } else {
         this.viewEnd -= 1
@@ -1288,12 +1319,14 @@ getPosFAST(row,col) {
       //this.printOffsetData()
     } else {
       // this is the case where we delete a non-CR element in the view
-      // it simply decrements the viewEnd
+      // it removes the deleted element from the current line in the view, and decrements viewEnd
+      const [row,col] = this.getVisRowColFAST(this.cursorPos)
+      this.lines[row] = this.lines[row].slice(0, col) + this.lines[row].slice(col + 1)
       this.viewEnd -= 1
     }
     //console.log("before rlFast")
     //this.printState()
-    this.reloadLinesFAST()
+    //this.reloadLinesFAST()
     //console.log("after_rlF_returning from rCBCP")
     //this.printState()
   }

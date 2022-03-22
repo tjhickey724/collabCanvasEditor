@@ -145,9 +145,21 @@ class CanvasEditor{
       } else if (key=='ArrowDown'){
         this.state.moveCursorDown()
         return
-      } else if (key=='Backspace'){
+      } else if (key=='Backspace'){ //TODO: remove this state printing
         //this.state.printState('before deleting')
+        const [row,col] = this.state.getVisRowColFAST(this.state.cursorPos)
+        console.log('before delete -- ' + 'viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' col: ' + col)
+        for(const s of this.state.lines)
+        {
+          console.log('\t' + s)
+        }
         this.state.removeCharBeforeCursorPos()
+        const [row2,col2] = this.state.getVisRowColFAST(this.state.cursorPos)
+        console.log('after delete -- ' + 'viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' col: ' + col2)
+        for(const s of this.state.lines)
+        {
+          console.log('\t' + s)
+        }
         //this.state.printState('after deleting')
         return
       } else if (key=='Enter'){
@@ -155,8 +167,9 @@ class CanvasEditor{
         this.state.insertCharAtCursorPos('\n')
         //this.state.printState("**** state after hitting enter")
         return
-      } else if (this.allLetters.indexOf(key)<0) {
+      } else if (this.allLetters.indexOf(key)<0) { //TODO: remove this state printing
         // don't handle anything but printable characters, backspace, arrows, and enter
+        console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd)
         return
       } else {
         //console.log("about to insert char")
@@ -184,7 +197,7 @@ class CanvasEditor{
       */
       //console.log("\n****\nredrawmsetCanvas")
       //this.state.updateLinesAroundCursorPosSLOW()
-      this.lines = this.state.reloadLinesFAST()
+      //this.lines = this.state.reloadLinesFAST()
       //console.log("ready to draw")
       this.getFontSize()
       this.clearmsetCanvas()
