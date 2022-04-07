@@ -113,7 +113,7 @@ class TextWindow{
     this.editorCallbacks2 =
       (op,pos,elt,user,me) =>{
         // first we do some local processing
-        //console.log(`\nZZZ editorCallback(${op},${pos},${elt},${user},${me})`)
+        ///console.log(`\nZZZ editorCallback(${op},${pos},${elt},${user},${me})`)
         const theLines = this.ddll.toString('','std')
         //console.log(`theLines=${JSON.stringify(theLines,null,2)}`)
         //this.printState()
@@ -138,20 +138,14 @@ class TextWindow{
               this.viewStart++
               this.viewEnd++
               this.cursorPos++
-            } else if (pos <= this.cursorPos){
-              this.cursorPos++
-              this.viewEnd++
-              this.reloadLinesFAST()
+            } else if (pos < this.viewEnd){
               // need to update the data to keep the cursor in the window ...
               // if elt=='\n' then
               //   maybe look at getVisRowColFAST to get cursor position
               //   and then update the state as needed,
-              // of ir cursor row is = cols-1  (i.e. at the right edge)
+              // of ir cursor row is = cols-1  (i.e. AT THE RIGHT EDGE)
               //   then add 1 to colOffset ...
-              this.redraw()
-            }else if (pos <= this.viewEnd){
-              this.viewEnd++
-              this.reloadLinesFAST()
+              this.doInsertionLogic(elt, pos, false)
               this.redraw()
             }
             break
@@ -181,6 +175,7 @@ class TextWindow{
             break
         }
         //console.log("Just processed a remote operation "+op+" "+pos)
+        //console.log("**********************************")
 
       }
 
@@ -756,7 +751,7 @@ getPosFAST(row,col) {
     // so anything in the first row of the view has row=0
 
     // We assume that pos is in the viewing window
-    //console.log(`in getVisRowColFast ${pos}`)
+    //console.log(`in getVisRowColFast ${pos}, range ${this.viewStart} ${this.viewEnd}`)
     //this.printState()
 
     if (pos<this.viewStart || pos > this.viewEnd){
@@ -1171,34 +1166,20 @@ getPosFAST(row,col) {
     if (this.cursor[1]<this.colOffset) {
       this.colOffset = Math.max(0,this.cursor[1]-this.scrollOffset)
     } else if (this.cursor[1]>=this.colOffset+this.cols){
-      this.colOffset = Math.max(0,this.cursor[1]-this.scrollOffset)
+      this.colOffset = Math.max(0,this.cursor[1]-this.scEzrollOffset)
     }
   }
 */
 
-
-  insertCharAtCursorPos(char) {
-    // this adjusts the view based on which character we insert
-    // inserting a newline character can change the viewEnd
-    // and the cursor always changes.
-    //console.log(`insertCharAtCursorPos(${JSON.stringify(char,null,2)})`)
-    //this.printOffsetData()
-
-    // first we insert the character into the underlying ddll tree
-    // this will also send the operation to all collaborators
-    this.ddll.msetTree.insert(this.cursorPos, char)
-
-    // this increases the document size
-    this.docSize += 1
-
+  doInsertionLogic(char, pos, isMe){
     // take note of what column and row we're in, so we can insert the new character
-    const [row, col] = this.getVisRowColFAST(this.cursorPos)
+    const [row, col] = this.getVisRowColFAST(pos)
 
     // next we update the viewStart and viewEnd as needed
     // and potentially this.lines .....
     if (char != '\n') {
       // if the character is not a newline
-      // it just increases the viewEnd and cursor
+      // it just increases the viewEnd
       this.viewEnd += 1
 
       // insert the character at the proper row and column
@@ -1218,34 +1199,90 @@ getPosFAST(row,col) {
         this.lines.splice(row, 0, split1)
 
       } else {
-        // char=='\n' and this.lines.length == this.rows
-        // in this case we need to decrease this.viewEnd since a new row
-        // has been added and it will push off the last row
-        const lastLine = this.lines[this.rows - 1]
-        if (this.cursorPos < this.viewEnd - lastLine.length) {
-          // this is the case that the CR just pushes the last line off the screen
-          // and so the viewEnd moves past each character on the last line
-          // and the CR at the end of the second to the last line
-          // but we also added a CR earlier so we just subtract lastLine.length
-          this.viewEnd -= lastLine.length
+        if(isMe) {
+          // this is our own operation
+          // char=='\n' and this.lines.length == this.rows
+          // in this case we need to decrease this.viewEnd since a new row
+          // has been added and it will push off the last row
+          const lastLine = this.lines[this.rows - 1]
+          if (this.cursorPos < this.viewEnd - lastLine.length) { // not last line
+            // this is the case that the CR just pushes the last line off the screen
+            // and so the viewEnd moves past each character on the last line
+            // and the CR at the end of the second to the last line
+            // but we also added a CR earlier so we just subtract lastLine.length
+            this.viewEnd -= lastLine.length
 
-          this.lines.pop()
-          this.lines[row] = split2
-          this.lines.splice(row, 0, split1)
+            this.lines.pop()
+            this.lines[row] = split2
+            this.lines.splice(row, 0, split1)
 
+          } else { //last line
+            // in this case, the user is inserting a CR on the last line in the
+            // viewing window and we will need to split the last line into two
+            // and remove the first line so that the cursor stays in the view
+            this.viewEnd += 1  // account for the new CR
+            this.viewStart += this.lines[0].length + 1
+
+            this.lines[row] = split1
+            this.lines.shift()
+            this.lines.push(split2)
+          }
         } else {
-          // in this case, the user is inserting a CR on the last line in the
-          // viewing window and we will need to split the last line into two
-          // and remove the first line so that the cursor stays in the view
-          this.viewEnd += 1  // account for the new CR
-          this.viewStart += this.lines[0].length + 1
+          // another user is inserting something on our screen
+          if(pos <= this.cursorPos){
+            // move all on-screen characters before the other user's cursor up by one line
+            this.cursorPos++
+            this.viewEnd++
 
-          this.lines[row] = split1
-          this.lines.shift()
-          this.lines.push(split2)
+            // if the other user's cursor is on the first line of this.lines, viewStart moves
+            // past the characters before the other user's cursor, plus the newline that the other user just inserted.
+            // if the other user's cursor is not on the first line, viewStart moves past the entire first line, plus
+            // the newline at the end of the first line.
+            this.viewStart++ // account for the newline
+            if(row === 0) {
+              this.viewStart += split1.length
+            } else {
+              this.viewStart += this.lines[0].length
+            }
+
+            this.lines[row] = split2
+            this.lines.splice(row, 0, split1)
+            this.lines.shift()
+          } else if(pos < this.viewEnd) {
+            // move all on-screen characters after the other user's cursor down by one line
+            if(row === this.lines.length - 1) {
+              this.viewEnd -= split2.length
+            } else {
+              // the viewEnd moves past each character on the last line
+              // and the CR at the end of the second to the last line
+              // but we also added a CR earlier so we just subtract lastLine.length
+              this.viewEnd -= this.lines[this.lines.length - 1].length
+            }
+
+            this.lines[row] = split2
+            this.lines.splice(row, 0, split1)
+            this.lines.pop()
+          }
         }
       }
     }
+  }
+
+  insertCharAtCursorPos(char) {
+    // this adjusts the view based on which character we insert
+    // inserting a newline character can change the viewEnd
+    // and the cursor always changes.
+    //console.log(`insertCharAtCursorPos(${JSON.stringify(char,null,2)})`)
+    //this.printOffsetData()
+
+    // first we insert the character into the underlying ddll tree
+    // this will also send the operation to all collaborators
+    this.ddll.msetTree.insert(this.cursorPos, char)
+
+    // this increases the document size
+    this.docSize += 1
+
+    this.doInsertionLogic(char, this.cursorPos, true)
 
     // finally we adjust the cursor position..
     this.moveCursorRight()
