@@ -145,7 +145,7 @@ class TextWindow{
               //   and then update the state as needed,
               // of ir cursor row is = cols-1  (i.e. AT THE RIGHT EDGE)
               //   then add 1 to colOffset ...
-              this.doInsertionLogic(elt, pos, false)
+              this.insertionLogic(elt, pos, false)
               this.redraw()
             }
             break
@@ -1171,7 +1171,11 @@ getPosFAST(row,col) {
   }
 */
 
-  doInsertionLogic(char, pos, isMe){
+  insertionLogic(char, pos, isMe){
+    if(!isMe && pos <= this.cursorPos){
+      this.cursorPos++
+    }
+
     // take note of what column and row we're in, so we can insert the new character
     const [row, col] = this.getVisRowColFAST(pos)
 
@@ -1229,9 +1233,8 @@ getPosFAST(row,col) {
           }
         } else {
           // another user is inserting something on our screen
-          if(pos <= this.cursorPos){
+          if(pos <= this.cursorPos){ //TODO: add similar column checking logic in here
             // move all on-screen characters before the other user's cursor up by one line
-            this.cursorPos++
             this.viewEnd++
 
             // if the other user's cursor is on the first line of this.lines, viewStart moves
@@ -1282,7 +1285,7 @@ getPosFAST(row,col) {
     // this increases the document size
     this.docSize += 1
 
-    this.doInsertionLogic(char, this.cursorPos, true)
+    this.insertionLogic(char, this.cursorPos, true)
 
     // finally we adjust the cursor position..
     this.moveCursorRight()

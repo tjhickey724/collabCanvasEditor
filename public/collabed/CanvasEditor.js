@@ -159,18 +159,23 @@ class CanvasEditor{
       } else if (this.allLetters.indexOf(key)<0) { //TODO: remove debug functions
         // don't handle anything but printable characters, backspace, arrows, and enter
         if(key == 'NumLock'){
-          for(const word of ['when','in','the','course','of','human','events','it','becomes','necessary','for','one','people']){
-            for (const letter of word) {
-              this.state.insertCharAtCursorPos(letter)
+          for(const line of [
+              ['when','in','the','course','of','human','events','it','becomes','necessary','for','one','people'],
+            ['dissolve', 'the', 'political', 'bands', 'which', 'have', 'connected', 'them', 'with', 'another', 'and', 'to', 'assume', 'among'],
+            ['the', 'powers', 'of', 'the', 'earth', 'the', 'separate', 'and', 'equal', 'station', 'to', 'which', 'the', 'laws']
+          ]) {
+            for (const word of line) {
+              for (const letter of word) {
+                this.state.insertCharAtCursorPos(letter)
+              }
+              this.state.insertCharAtCursorPos(' ')
             }
             this.state.insertCharAtCursorPos('\n')
           }
-          this.state.insertCharAtCursorPos('t')
-          this.state.insertCharAtCursorPos('o')
           return
         }
         const [row, col] = this.state.getVisRowColFAST(this.state.cursorPos)
-        console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' column: ' + col)
+        console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' colOffset: ' + this.state.colOffset + ' cols: ' + this.state.cols)
         return
       } else {
         //console.log("about to insert char")
