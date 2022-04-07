@@ -138,7 +138,7 @@ class TextWindow{
               this.viewStart++
               this.viewEnd++
               this.cursorPos++
-            } else if (pos < this.viewEnd){
+            } else if (pos <= this.viewEnd){
               // need to update the data to keep the cursor in the window ...
               // if elt=='\n' then
               //   maybe look at getVisRowColFAST to get cursor position
