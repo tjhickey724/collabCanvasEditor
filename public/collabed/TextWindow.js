@@ -139,12 +139,6 @@ class TextWindow{
               this.viewEnd++
               this.cursorPos++
             } else if (pos <= this.viewEnd){
-              // need to update the data to keep the cursor in the window ...
-              // if elt=='\n' then
-              //   maybe look at getVisRowColFAST to get cursor position
-              //   and then update the state as needed,
-              // of ir cursor row is = cols-1  (i.e. AT THE RIGHT EDGE)
-              //   then add 1 to colOffset ...
               this.insertionLogic(elt, pos, false)
               this.redraw()
             }
@@ -1170,10 +1164,13 @@ getPosFAST(row,col) {
     }
   }
 */
-
+  //TODO: reorganize isMe checks
   insertionLogic(char, pos, isMe){
-    if(!isMe && pos <= this.cursorPos){
-      this.cursorPos++
+    if(!isMe){
+      var [ownRow, ownCol] = this.getVisRowColFAST(this.cursorPos)
+
+      if(pos <= this.cursorPos)
+        this.cursorPos++
     }
 
     // take note of what column and row we're in, so we can insert the new character
@@ -1182,6 +1179,13 @@ getPosFAST(row,col) {
     // next we update the viewStart and viewEnd as needed
     // and potentially this.lines .....
     if (char != '\n') {
+      if(!isMe && row === ownRow && pos <= this.cursorPos &&
+          ((this.colOffset > 0 && col <= this.colOffset) // the other cursor is at or before where your cols start, excluding when your cols start at 0
+              || this.cursorPos - this.colOffset - 1 === this.cols) // my cursor is at right edge of my screen. -1 due to this.cursorPos++ earlier
+      ){
+        // TODO: should be my cursor is at center of screen?
+        this.colOffset++
+      }
       // if the character is not a newline
       // it just increases the viewEnd
       this.viewEnd += 1
@@ -1190,6 +1194,7 @@ getPosFAST(row,col) {
       this.lines[row] = this.lines[row].slice(0, col) + char + this.lines[row].slice(col)
 
     } else {
+      // inserted character is a newline
       const split1 = this.lines[row].slice(0, col)
       const split2 = this.lines[row].slice(col)
 
@@ -1204,7 +1209,7 @@ getPosFAST(row,col) {
 
       } else {
         if(isMe) {
-          // this is our own operation
+          // we are the ones inserting a newline, not someone else
           // char=='\n' and this.lines.length == this.rows
           // in this case we need to decrease this.viewEnd since a new row
           // has been added and it will push off the last row
@@ -1232,8 +1237,12 @@ getPosFAST(row,col) {
             this.lines.push(split2)
           }
         } else {
-          // another user is inserting something on our screen
-          if(pos <= this.cursorPos){ //TODO: add similar column checking logic in here
+          // another user is inserting a newline
+          if(pos <= this.cursorPos){ //TODO: does this this.cursorPos need to be this.cursorPos-1 due to this.cursorPos++ at beginning?
+            if(row === ownRow){
+              this.colOffset -= split1.length //TODO: this is bookkeeping, but prob need to reload lines on screen visually
+            }
+
             // move all on-screen characters before the other user's cursor up by one line
             this.viewEnd++
 
