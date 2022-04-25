@@ -170,7 +170,7 @@ class CanvasEditor{
               }
               this.state.insertCharAtCursorPos(' ')
             }
-            this.state.insertCharAtCursorPos('\n')
+            //this.state.insertCharAtCursorPos('\n')
           }
           return
         }

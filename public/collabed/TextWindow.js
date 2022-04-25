@@ -1198,6 +1198,10 @@ getPosFAST(row,col) {
       const split1 = this.lines[row].slice(0, col)
       const split2 = this.lines[row].slice(col)
 
+      if(!isMe && row === ownRow){
+        this.colOffset = Math.max(this.colOffset - split1.length, 0)
+      }
+
       if (this.lines.length < this.rows) {
         // if the character is a newline, but this.lines isn't full
         // we don't have to remove any lines from this.lines
@@ -1239,10 +1243,6 @@ getPosFAST(row,col) {
         } else {
           // another user is inserting a newline
           if(pos <= this.cursorPos){ //TODO: does this this.cursorPos need to be this.cursorPos-1 due to this.cursorPos++ at beginning?
-            if(row === ownRow){
-              this.colOffset -= split1.length //TODO: this is bookkeeping, but prob need to reload lines on screen visually
-            }
-
             // move all on-screen characters before the other user's cursor up by one line
             this.viewEnd++
 
