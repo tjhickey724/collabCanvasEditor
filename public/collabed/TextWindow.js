@@ -1212,6 +1212,7 @@ getPosFAST(row,col) {
         this.lines.splice(row, 0, split1)
 
       } else {
+        // the character is a newline, and this.lines is full
         if(isMe) {
           // we are the ones inserting a newline, not someone else
           // char=='\n' and this.lines.length == this.rows
@@ -1242,7 +1243,12 @@ getPosFAST(row,col) {
           }
         } else {
           // another user is inserting a newline
-          if(pos <= this.cursorPos){ //TODO: does this this.cursorPos need to be this.cursorPos-1 due to this.cursorPos++ at beginning?
+          //TODO: does this this.cursorPos need to be this.cursorPos-1 due to this.cursorPos++ at beginning?
+          // no, because this.cursorPos increments under the same condition, and if that condition is true,
+          // it will remain true after the increment. If it was false -- which is the scenario where an increment could
+          // change the condition's truth value -- the increment doesn't happen, so this condition's truth value
+          // is always the same, here and at the beginning.
+          if(pos <= this.cursorPos){
             // move all on-screen characters before the other user's cursor up by one line
             this.viewEnd++
 
