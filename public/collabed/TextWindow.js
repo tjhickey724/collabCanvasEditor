@@ -151,7 +151,7 @@ class TextWindow{
             }
             // adjust the viewStart and cursorPos and docSize
             this.docSize--
-            if (pos<this.viewStart){
+            if (pos<this.viewStart){ //TODO: <=
               this.viewStart--
               this.cursorPos--
               this.viewEnd--
@@ -1331,9 +1331,10 @@ getPosFAST(row,col) {
     // the cursor position is one smaller also
     this.cursorPos -= 1
 
-    //this.viewEnd -= 1
-    //this.printOffsetData()
+    this.deletionLogic(char, true)
+  }
 
+  deletionLogic(char, isMe){
     if (this.cursorPos < this.viewStart){
       // this happens if the user was at the beginning of the first line of the view
       // and deleted the previous character by hitting backspace
@@ -1394,11 +1395,6 @@ getPosFAST(row,col) {
       this.lines[row] = this.lines[row].slice(0, col) + this.lines[row].slice(col + 1)
       this.viewEnd -= 1
     }
-    //console.log("before rlFast")
-    //this.printState()
-    //this.reloadLinesFAST()
-    //console.log("after_rlF_returning from rCBCP")
-    //this.printState()
   }
 
   setRedrawCanvas(redraw){

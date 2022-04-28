@@ -158,30 +158,6 @@ class CanvasEditor{
         return
       } else if (this.allLetters.indexOf(key)<0) { //TODO: remove debug functions
         // don't handle anything but printable characters, backspace, arrows, and enter
-        if(key == 'NumLock'){
-          for(const line of [
-              ['when','in','the','course','of','human','events','it','becomes','necessary','for','one','people'],
-            ['dissolve', 'the', 'political', 'bands', 'which', 'have', 'connected', 'them', 'with', 'another', 'and', 'to', 'assume', 'among'],
-            ['the', 'powers', 'of', 'the', 'earth', 'the', 'separate', 'and', 'equal', 'station', 'to', 'which', 'the', 'laws'],
-            ['of', 'Nature', 'and', 'of', "Nature's", 'God', 'entitle', 'them'],
-            ['a', 'decent', 'respect', 'to', 'the', 'opinions', 'of', 'mankind', 'requires'],
-            ['that', 'they', 'should', 'declare', 'the', 'causes', 'which', 'impel', 'them', 'to', 'the', 'separation.'],
-            ['we', 'hold', 'these', 'truths', 'to', 'be', 'self-evident'],
-            ['that', 'all', 'men', 'are', 'created', 'equal,', 'that', 'they', 'are'],
-            ['endowed', 'by', 'their', 'Creator', 'with', 'certain', 'unalienable', 'Rights'],
-            ['that', 'among', 'these', 'are', 'Life,', 'Liberty', 'and', 'the', 'pursuit', 'of', 'Happiness'],
-            ['that', 'to', 'secure', 'these', 'rights,', 'Governments', 'are', 'instituted']
-          ]) {
-            for (const word of line) {
-              for (const letter of word) {
-                this.state.insertCharAtCursorPos(letter)
-              }
-              this.state.insertCharAtCursorPos(' ')
-            }
-            this.state.insertCharAtCursorPos('\n')
-          }
-          return
-        }
         const [row, col] = this.state.getVisRowColFAST(this.state.cursorPos)
         console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' colOffset: ' + this.state.colOffset + ' cols: ' + this.state.cols)
         return
