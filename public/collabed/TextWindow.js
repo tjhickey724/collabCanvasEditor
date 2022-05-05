@@ -65,7 +65,7 @@ class TextWindow{
 
     // these are the necessary state variables
     this.viewStart = 0  // the position of 1st visible character in the viewStart
-    this._viewEnd = 0
+    this.viewEnd = 0
     this.cursorPos = 0 //
     this.rows = 10
     this.cols = 80
@@ -127,13 +127,6 @@ class TextWindow{
               return
             }
             // adjust the viewStart and cursorPos and docSize
-            //TODO: remove this comment?
-            // TJH 8/2/21 we may need to update colOffset or rowOffset ...
-            // Also reloadLinesFAST might make the lines array too long
-            // i.e. bigger than the window and so we need to remove the last lines
-            // and update viewEnd, or viewStart to keep the curson on the screen...
-            // THIS IS ALL BROKEN!!  it should be adjusting the viewStart, viewEng
-            // and colOffset to keep the cursor visible ...
             this.docSize++
             if (pos<this.viewStart){
               this.viewStart++
@@ -181,16 +174,6 @@ class TextWindow{
       this.ddll_lines =
          () => this.ddll.msetTree.toList2('std').join('').split("\n")
 
-  }
-  //TODO: remove getter and setter when done debugging refresh bug
-  get viewEnd(){
-    return this._viewEnd
-  }
-
-  set viewEnd(value){
-    this._viewEnd = value
-    //console.log('viewEnd changed to ' + value)
-    //console.trace()
   }
 
   printState(text){
@@ -1161,10 +1144,11 @@ getPosFAST(row,col) {
     }
   }
 */
-  //TODO: reorganize isMe checks
-  //FIXME: if other's cursor is after mine, but both are in view at the end of a long line, and other inserts
-  // newline, my coloffset is reset back to 0 along with other's, when mine should be unchanged
+
   insertionLogic(char, pos, isMe){
+    // if isMe === true, then pos is this.cursorPos: our own cursor. if isMe === false, then pos is someone else's
+    // cursor position: the one who is doing the operation.
+
     if(!isMe){
       var [ownRow, ownCol] = this.getVisRowColFAST(this.cursorPos)
 
@@ -1179,8 +1163,8 @@ getPosFAST(row,col) {
     // and potentially this.lines .....
     if (char != '\n') {
       if(!isMe && row === ownRow && pos <= this.cursorPos &&
-          ((this.colOffset > 0 && col <= this.colOffset) // the other cursor is at or before where your cols start, excluding when your cols start at 0
-              || ownCol - this.colOffset === this.cols) // my cursor is at right edge of my screen. -1 due to this.cursorPos++ earlier
+          ((this.colOffset > 0 && col <= this.colOffset) // the other cursor is at or before the left edge of our view, excluding when our colOffset is 0
+              || ownCol - this.colOffset === this.cols) // our cursor is at right edge of our screen
       ){
         this.colOffset++
       }
@@ -1196,7 +1180,7 @@ getPosFAST(row,col) {
       const split1 = this.lines[row].slice(0, col)
       const split2 = this.lines[row].slice(col)
 
-      if(!isMe && row === ownRow){
+      if(!isMe && row === ownRow && pos <= this.cursorPos){
         this.colOffset = Math.max(this.colOffset - split1.length, 0)
       }
 
@@ -1241,11 +1225,6 @@ getPosFAST(row,col) {
           }
         } else {
           // another user is inserting a newline
-          //TODO: does this this.cursorPos need to be this.cursorPos-1 due to this.cursorPos++ at beginning?
-          // no, because this.cursorPos increments under the same condition, and if that condition is true,
-          // it will remain true after the increment. If it was false -- which is the scenario where an increment could
-          // change the condition's truth value -- the increment doesn't happen, so this condition's truth value
-          // is always the same, here and at the beginning.
           if(pos <= this.cursorPos){
             // move all on-screen characters before the other user's cursor up by one line
             this.viewEnd++
@@ -1333,6 +1312,9 @@ getPosFAST(row,col) {
   }
 
   deletionLogic(char, pos, isMe){
+    // if isMe === true, then pos is this.cursorPos: our own cursor. if isMe === false, then pos is someone else's
+    // cursor position: the one who is doing the operation.
+
     if (pos === this.viewStart - 1){
       // this happens if the user was at the beginning of the first line of the view
       // and deleted the previous character by hitting backspace

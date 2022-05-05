@@ -149,10 +149,10 @@ class CanvasEditor{
       } else if (key=='Enter'){
         this.state.insertCharAtCursorPos('\n')
         return
-      } else if (this.allLetters.indexOf(key)<0) { //TODO: remove debug functions
+      } else if (this.allLetters.indexOf(key)<0) {
         // don't handle anything but printable characters, backspace, arrows, and enter
-        const [row, col] = this.state.getVisRowColFAST(this.state.cursorPos)
-        console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' colOffset: ' + this.state.colOffset + ' col: ' + col)
+        //const [row, col] = this.state.getVisRowColFAST(this.state.cursorPos)
+        //console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' colOffset: ' + this.state.colOffset + ' col: ' + col)
         return
       } else {
         this.state.insertCharAtCursorPos(key)
