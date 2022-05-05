@@ -127,8 +127,6 @@ class CanvasEditor{
 
 
     addKeyPress(event){
-      //console.log('in addKeyPress')
-      //this.state.printState()
       const key = event.key
       let state = this.state
       if (event.ctrlKey){
@@ -147,33 +145,19 @@ class CanvasEditor{
         return
       } else if (key=='Backspace'){
         this.state.removeCharBeforeCursorPos()
-        //this.state.printState('after deleting')
         return
       } else if (key=='Enter'){
-        //this.state.printState('before inserting CR')
-        //console.log('BEFORE cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd)
         this.state.insertCharAtCursorPos('\n')
-        //console.log('AFTER cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd)
-        //console.log('***********************************')
         return
       } else if (this.allLetters.indexOf(key)<0) { //TODO: remove debug functions
         // don't handle anything but printable characters, backspace, arrows, and enter
         const [row, col] = this.state.getVisRowColFAST(this.state.cursorPos)
-        console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' colOffset: ' + this.state.colOffset + ' cols: ' + this.state.cols)
+        console.log('cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd + ' colOffset: ' + this.state.colOffset + ' col: ' + col)
         return
       } else {
-        //console.log("about to insert char")
-        //this.state.printState('before inserting non-CR:'+key)
-        //console.log('BEFORE cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd)
         this.state.insertCharAtCursorPos(key)
-        //console.log('AFTER cursorPos: ' + this.state.cursorPos + ' viewStart: ' + this.state.viewStart + ' viewEnd: ' + this.state.viewEnd)
-        //this.state.printState('after inserting non-CR:'+key)
-        //console.log("**** state after inserting")
 
       }
-      //console.log(`addKeyPress{${key},${state}} is complete`)
-      //this.state.printState()
-      //console.log('***********************************')
     }
 
 

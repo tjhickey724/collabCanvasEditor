@@ -127,11 +127,12 @@ class TextWindow{
               return
             }
             // adjust the viewStart and cursorPos and docSize
+            //TODO: remove this comment?
             // TJH 8/2/21 we may need to update colOffset or rowOffset ...
             // Also reloadLinesFAST might make the lines array too long
             // i.e. bigger than the window and so we need to remove the last lines
             // and update viewEnd, or viewStart to keep the curson on the screen...
-            //THIS IS ALL BROKEN!!  it should be adjusting the viewStart, viewEng
+            // THIS IS ALL BROKEN!!  it should be adjusting the viewStart, viewEng
             // and colOffset to keep the cursor visible ...
             this.docSize++
             if (pos<this.viewStart){
@@ -151,18 +152,13 @@ class TextWindow{
             }
             // adjust the viewStart and cursorPos and docSize
             this.docSize--
-            if (pos<this.viewStart){ //TODO: <=
+            if (pos<this.viewStart - 1) {
               this.viewStart--
               this.cursorPos--
               this.viewEnd--
-            } else if (pos <= this.cursorPos){
-              this.cursorPos--
-              this.viewEnd--
-              this.reloadLinesFAST()
-              this.redraw()
-            }else if (pos <= this.viewEnd){
-              this.viewEnd--
-              this.reloadLinesFAST()
+            }
+            else if(pos <= this.viewEnd){
+              this.deletionLogic(elt, pos, false)
               this.redraw()
             }
 
@@ -186,7 +182,7 @@ class TextWindow{
          () => this.ddll.msetTree.toList2('std').join('').split("\n")
 
   }
-  //TODO: remove getter and setter when done debugging
+  //TODO: remove getter and setter when done debugging refresh bug
   get viewEnd(){
     return this._viewEnd
   }
@@ -435,7 +431,8 @@ docSize = ${this.docSize}
   }
 
 
-
+  //FIXME: this and moveCursorDown don't readjust colOffset to bring cursor back into view if scrolling from a
+  // long line to a short line
   moveCursorUp(){
     /*
       This is an optimally efficient implementation of the moveCursorUp
@@ -1165,6 +1162,8 @@ getPosFAST(row,col) {
   }
 */
   //TODO: reorganize isMe checks
+  //FIXME: if other's cursor is after mine, but both are in view at the end of a long line, and other inserts
+  // newline, my coloffset is reset back to 0 along with other's, when mine should be unchanged
   insertionLogic(char, pos, isMe){
     if(!isMe){
       var [ownRow, ownCol] = this.getVisRowColFAST(this.cursorPos)
@@ -1181,9 +1180,8 @@ getPosFAST(row,col) {
     if (char != '\n') {
       if(!isMe && row === ownRow && pos <= this.cursorPos &&
           ((this.colOffset > 0 && col <= this.colOffset) // the other cursor is at or before where your cols start, excluding when your cols start at 0
-              || this.cursorPos - this.colOffset - 1 === this.cols) // my cursor is at right edge of my screen. -1 due to this.cursorPos++ earlier
+              || ownCol - this.colOffset === this.cols) // my cursor is at right edge of my screen. -1 due to this.cursorPos++ earlier
       ){
-        // TODO: should be my cursor is at center of screen?
         this.colOffset++
       }
       // if the character is not a newline
@@ -1331,11 +1329,11 @@ getPosFAST(row,col) {
     // the cursor position is one smaller also
     this.cursorPos -= 1
 
-    this.deletionLogic(char, true)
+    this.deletionLogic(char, this.cursorPos, true)
   }
 
-  deletionLogic(char, isMe){
-    if (this.cursorPos < this.viewStart){
+  deletionLogic(char, pos, isMe){
+    if (pos === this.viewStart - 1){
       // this happens if the user was at the beginning of the first line of the view
       // and deleted the previous character by hitting backspace
       // the cursor is now at the end of what was the previous line
@@ -1343,11 +1341,28 @@ getPosFAST(row,col) {
       // and so that previous line now becomes visible
       //console.log("We are pulling in a new line!")
       const [line,startPos,endPos]
-          = this.getLineContainingPosFAST(this.cursorPos)
+          = this.getLineContainingPosFAST(pos)
 
-      // we need to adjust the column offset as the cursor is now
-      // at the end of the first line in the view
-      this.colOffset = Math.max(0,line.length-this.cols+1)
+      if(isMe) {
+        // this is our own operation.
+        // we need to adjust the column offset as the cursor is now at the end of the first line in the view
+        this.colOffset = Math.max(0, (line.length - this.lines[0].length - this.cols) + 1)
+      }else {
+        //this is someone else's operation
+        const [myCursorRow, myCursorCol] = this.getVisRowColFAST(this.cursorPos)
+        this.cursorPos -= 1
+        if (myCursorRow === 0 && pos <= this.cursorPos) {
+          //our cursor is on the first row, at or after the other's cursor.
+          //So, in order to keep our cursor on screen, we have to adjust this.colOffset
+
+          const lengthOfNewlyPulledInLine = line.length - this.lines[0].length
+          if(this.colOffset > 0){
+            this.colOffset += lengthOfNewlyPulledInLine
+          } else {
+            this.colOffset += Math.max(0, (lengthOfNewlyPulledInLine - (this.cols - myCursorCol)) + 1)
+          }
+        }
+      }
 
       // the beginning of this new line is the new beginning of our view
       this.viewStart = startPos
@@ -1357,41 +1372,103 @@ getPosFAST(row,col) {
       this.lines[0] = line
       // note that we have simply lengthened the first line of this.lines
       // so we don't need to remove any elements from the end!
-      //this.printOffsetData()
     } else if (char=='\n'){
-      // this is the case where we are deleting a CR between two lines which
-      // are in this.lines. They will then be merged and we need to
-      // pull in another line either at the end if possible
-      // and adjust viewEnd accordingly
-      const [row,col] = this.getVisRowColFAST(this.cursorPos)
+      if(pos === this.viewEnd && this.lines.length === this.rows) {
+        // this is someone else's operation, and they were at the beginning of the line right below our view
+        // when they deleted the newline (placing them at our viewEnd now).
 
-      // The cursor was at the beginning of this.lines[row+1] before the delete was performed.
-      // After the delete, the cursor has moved up to this.lines[row]. So this.lines[row+1] must be merged onto the
+        // Update the last line on our screen
+        const [lastLine,startP,endP] = this.getLineContainingPosFAST(this.viewEnd)
+
+        this.lines[this.lines.length - 1] = lastLine
+        this.viewEnd = endP
+        return
+      }
+
+      // this is the case where a user is deleting a CR between two lines which
+      // are in this.lines. The two lines will then be merged and we need to
+      // pull in another line from either the top or the bottom, if possible,
+      // and adjust viewEnd accordingly
+      const [row,col] = this.getVisRowColFAST(pos)
+
+      // adjust column offset if necessary
+      if(isMe) {
+        if (col > this.colOffset + this.cols) {
+          // if our cursor is beyond the right edge of our screen, increase our colOffset so we can see our cursor
+          this.colOffset = (col - this.cols) + 1
+        }
+      } else {
+        //this is another user's operation.
+        // if their cursor was on or before ours before the deletion, and if both cursors were on the same row
+        // before the deletion, then the deletion operation potentially caused our cursor to move beyond the right
+        // edge of our screen
+        if (pos < this.cursorPos && row === this.getVisRowColFAST(this.cursorPos)[0] - 1) {
+          if(this.colOffset > 0){
+            // if our colOffset was anything greater than 0, then we did not see the other user's cursor
+            // delete the newline at the beginning of our line. So don't change our view; just update the
+            // colOffset for bookkeeping.
+            this.colOffset += this.lines[row].length
+          } else {
+            // our colOffset was 0, so if after the deletion our line is longer than can fit on screen,
+            // adjust colOffset
+            this.colOffset = Math.max(0, (col - this.cols) + (this.cursorPos - pos) + 1)
+          }
+        }
+      }
+
+      // The cursor was at the beginning of this.lines[row+1] before the deletion was performed.
+      // After the deletion, the cursor has moved up to this.lines[row]. So this.lines[row+1] must be merged onto the
       // end of this.lines[row], the original this.lines[row+1] deleted, and all subsequent lines shifted up one
       // position to fill the space.
       this.lines[row] += this.lines[row + 1]
       this.lines.splice(row + 1, 1)
 
-      // adjust column offset if necessary
-      if (col > this.colOffset+this.cols || col < this.colOffset) {
-        this.colOffset = Math.max(0, col - this.cols)
-      }
+      if(!isMe && pos < this.cursorPos && this.lines.length === this.rows - 1 && this.viewStart > 0) {
+        // if it's someone else's operation, and the other cursor is at or before mine, and this.lines were full
+        // before the deletion, and there are lines above our view available for pulling in, then pull in a new
+        // line from the top.
+        const [firstLine,startP,endP] = this.getLineContainingPosFAST(this.viewStart-1)
 
-      if (this.viewEnd < this.docSize){
-        // pull in another line into the buffer and adjust viewEnd
+        this.lines.unshift(firstLine)
+        this.viewStart = startP
+        this.viewEnd -= 1
+      }
+      else if (this.viewEnd < this.docSize){
+        // pull in another line from the bottom into the buffer and adjust viewEnd
         const [lastline,startP,endP]
             = this.getLineContainingPosFAST(this.viewEnd+1)
 
         this.lines.push(lastline)
         this.viewEnd = endP
       } else {
+        // no more lines left to pull in from the bottom
         this.viewEnd -= 1
       }
-      //this.printOffsetData()
+
+      if(!isMe && pos < this.cursorPos){
+        this.cursorPos -= 1
+      }
     } else {
       // this is the case where we delete a non-CR element in the view
       // it removes the deleted element from the current line in the view, and decrements viewEnd
-      const [row,col] = this.getVisRowColFAST(this.cursorPos)
+      const [row,col] = this.getVisRowColFAST(pos)
+
+      if(isMe) {
+        if (col < this.colOffset) {
+          // this happens when we scroll past the left side of the view
+          // and we need to move the view back
+          this.colOffset = Math.max(0, col - this.cols)
+        }
+      } else {
+        // this is someone else's operation
+        if(pos < this.cursorPos){
+          this.cursorPos -= 1
+          if(row === this.getVisRowColFAST(this.cursorPos)[0] && col < this.colOffset) {
+            this.colOffset -= 1
+          }
+      }
+    }
+
       this.lines[row] = this.lines[row].slice(0, col) + this.lines[row].slice(col + 1)
       this.viewEnd -= 1
     }
