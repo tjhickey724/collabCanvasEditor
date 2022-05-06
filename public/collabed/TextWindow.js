@@ -1384,17 +1384,14 @@ getPosFAST(row,col) {
         // if their cursor was on or before ours before the deletion, and if both cursors were on the same row
         // before the deletion, then the deletion operation potentially caused our cursor to move beyond the right
         // edge of our screen
-        if (pos < this.cursorPos && row === this.getVisRowColFAST(this.cursorPos)[0] - 1) {
-          if(this.colOffset > 0){
-            // if our colOffset was anything greater than 0, then we did not see the other user's cursor
-            // delete the newline at the beginning of our line. So don't change our view; just update the
-            // colOffset for bookkeeping.
-            this.colOffset += this.lines[row].length
-          } else {
-            // our colOffset was 0, so if after the deletion our line is longer than can fit on screen,
-            // adjust colOffset
-            this.colOffset = Math.max(0, (col - this.cols) + (this.cursorPos - pos) + 1)
-          }
+        const [ownRow, ownCol] = this.getVisRowColFAST(this.cursorPos)
+
+        if ((pos < this.cursorPos && row === ownRow - 1) &&
+            (this.colOffset > 0 || ownCol + this.lines[row].length > this.cols)) {
+
+          //if our colOffset was greater than 0, or if after the deletion our line is longer than can fit on screen,
+          // adjust colOffset to keep our cursor in the same column that it's in
+          this.colOffset += this.lines[row].length
         }
       }
 
