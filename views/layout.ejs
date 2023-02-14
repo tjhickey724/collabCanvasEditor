@@ -17,11 +17,11 @@
 				<span class="button">Home</span>
 			</a>
 			<% if (!loggedIn) {%>
-			<a href="/auth/google">
+			<a href="/login">
 				<span class="button">Login</span>
 			</a>
 			<% } else  { %>
-				<%= user.googleemail %>
+				<%= user.username %>
 			<a href="/logout">
 				<span class="button">Logout</span>
 			</a>

@@ -9,15 +9,19 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
 const layouts = require("express-ejs-layouts");
-const debug = require('debug')('msetdemo:server');
+const debug = require('debug')('msetdemo:server');//
+const session = require("express-session"); // to handle sessions using cookies
 
 const User = require('./models/User')
+var MongoDBStore = require('connect-mongodb-session')(session);
 
 
 //const app = require('express')();
 const app = express();
 const http = require('http'); //.Server(app);
 const httpServer = http.Server(app)
+
+
 
 const io = require('socket.io')(httpServer);
 
@@ -26,27 +30,55 @@ let configAuth = null;
 console.log('process.env =')
 console.dir(process.env)
 
-//configAuth = require('./auth');
-configAuth = {mongoDB_URI:process.env.mongodb_URI}
-
-const mongoDB_URI = configAuth.mongoDB_URI
-
+const mongodb_URI = 'mongodb://localhost:27017/authDemo';
 const mongoose = require( 'mongoose' );
 //mongoose.connect( `mongodb+srv://${auth.atlasAuth.username}:${auth.atlasAuth.password}@cluster0-yjamu.mongodb.net/authdemo?retryWrites=true&w=majority`);
-//mongoose.connect( 'mongodb://localhost/authDemo');
 
-//const mongoDB_URI = process.env.MONGODB_URI
-mongoose.connect(mongoDB_URI)
+mongoose.connect( mongodb_URI);
 
 const db = mongoose.connection;
+
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
   console.log("we are connected!!!")
 });
 
-const authRouter = require('./routes/googleAuth');
-const isLoggedIn = authRouter.isLoggedIn
 
+const store = new MongoDBStore({
+  uri: mongodb_URI,
+  collection: 'mySessions'
+});
+
+// Catch errors
+store.on('error', function(error) {
+  console.log(error);
+});
+
+app.use(require('express-session')({
+  secret: 'This is a secret',
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+  },
+  store: store,
+  // Boilerplate options, see:
+  // * https://www.npmjs.com/package/express-session#resave
+  // * https://www.npmjs.com/package/express-session#saveuninitialized
+  resave: true,
+  saveUninitialized: true
+}));
+
+
+//const google_auth_router = require('./routes/googleAuth');
+const pw_auth_router = require('./routes/pwauth')
+
+// route middleware to make sure a user is logged in
+function isLoggedIn(req, res, next) {
+  if (res.locals.loggedIn){
+    return next();
+  } else {
+    res.redirect('/login');
+  }
+}
 //app.get('/', function(req, res){
 //	res.sendFile(__dirname + '/index.html');
 //    });
@@ -57,17 +89,19 @@ let msetId=1
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+//app.use(google_authRouter)
 
-app.use(cors());
-app.use(layouts);
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(pw_auth_router)
 
-app.use(authRouter)
+app.use(cors());
+app.use(layouts);
+
 
 app.get('/', (req,res,next) => {
   console.log("showing index file")
@@ -194,7 +228,7 @@ io2.on('connection', function(socket){
 
 
 
-var port = normalizePort(process.env.PORT || '5000');
+var port = normalizePort(process.env.PORT || '5100');
 app.set('port', port);
 
 /**

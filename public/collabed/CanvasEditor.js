@@ -232,7 +232,7 @@ class CanvasEditor{
 
       const ctx = this.msetCanvas.getContext('2d')
       ctx.fillStyle='black'
-      ctx.fillRect(start,baseline, 1,topline)
+      ctx.fillRect(start-1,baseline, 3,topline)
     }
 
 
