@@ -27,14 +27,11 @@ const io = require('socket.io')(httpServer);
 
 let configAuth = null;
 
-console.log('process.env =')
-console.dir(process.env)
 
-const mongodb_URI = 'mongodb://localhost:27017/authDemo';
+
+const mongodb_URI = 'mongodb://127.0.0.1:27017/authDemo';
 const mongoose = require( 'mongoose' );
-//mongoose.connect( `mongodb+srv://${auth.atlasAuth.username}:${auth.atlasAuth.password}@cluster0-yjamu.mongodb.net/authdemo?retryWrites=true&w=majority`);
-
-mongoose.connect( mongodb_URI);
+mongoose.connect( mongodb_URI,{useUnifiedTopology:true,useNewUrlParser:true});
 
 const db = mongoose.connection;
 
