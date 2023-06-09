@@ -81,7 +81,9 @@ class TextWindow{
 
     this.scrollOffset = 1 // this is for how much you want to scroll when recentering...
 
-    this.redrawCanvas = ()=> {console.log("redrawing not initialized yet")}
+    this.redrawCanvas = ()=> {
+      //console.log("redrawing not initialized yet")
+    }
 
     this.debugging=true
 
@@ -111,7 +113,7 @@ class TextWindow{
     this.editorCallbacks2 =
       (op,pos,elt,user,me) =>{
         // first we do some local processing
-        //console.log(`\nZZZ editorCallback(${op},${pos},${elt},${user},${me})`)
+        ///console.log(`\nZZZ editorCallback(${op},${pos},${elt},${user},${me})`)
         const theLines = this.ddll.toString('','std')
         //console.log(`theLines=${JSON.stringify(theLines,null,2)}`)
         //this.printState()
@@ -125,31 +127,13 @@ class TextWindow{
               return
             }
             // adjust the viewStart and cursorPos and docSize
-            // TJH 8/2/21 we may need to update colOffset or rowOffset ...
-            // Also reloadLinesFAST might make the lines array too long
-            // i.e. bigger than the window and so we need to remove the last lines
-            // and update viewEnd, or viewStart to keep the curson on the screen...
-            //THIS IS ALL BROKEN!!  it should be adjusting the viewStart, viewEng
-            // and colOffset to keep the cursor visible ...
             this.docSize++
             if (pos<this.viewStart){
               this.viewStart++
               this.viewEnd++
               this.cursorPos++
-            } else if (pos <= this.cursorPos){
-              this.cursorPos++
-              this.viewEnd++
-              this.reloadLinesFAST()
-              // need to update the data to keep the cursor in the window ...
-              // if elt=='\n' then
-              //   maybe look at getVisRowColFAST to get cursor position
-              //   and then update the state as needed,
-              // of ir cursor row is = cols-1  (i.e. at the right edge)
-              //   then add 1 to colOffset ...
-              this.redraw()
-            }else if (pos <= this.viewEnd){
-              this.viewEnd++
-              this.reloadLinesFAST()
+            } else if (pos <= this.viewEnd){
+              this.insertionLogic(elt, pos, false)
               this.redraw()
             }
             break
@@ -161,24 +145,20 @@ class TextWindow{
             }
             // adjust the viewStart and cursorPos and docSize
             this.docSize--
-            if (pos<this.viewStart){
+            if (pos<this.viewStart - 1) {
               this.viewStart--
               this.cursorPos--
               this.viewEnd--
-            } else if (pos <= this.cursorPos){
-              this.cursorPos--
-              this.viewEnd--
-              this.reloadLinesFAST()
-              this.redraw()
-            }else if (pos <= this.viewEnd){
-              this.viewEnd--
-              this.reloadLinesFAST()
+            }
+            else if(pos <= this.viewEnd){
+              this.deletionLogic(elt, pos, false)
               this.redraw()
             }
 
             break
         }
         //console.log("Just processed a remote operation "+op+" "+pos)
+        //console.log("**********************************")
 
       }
 
@@ -196,8 +176,6 @@ class TextWindow{
 
   }
 
-
-
   printState(text){
     if (!this.debugging){
       return
@@ -207,7 +185,7 @@ class TextWindow{
     }
     text = text || ""
     // print the current state of the editor
-    console.log(`\n********************
+    /*console.log(`\n********************
 ${text}
 EDITOR STATE: ${new Date()}
 rows=${this.rows} cols=${this.cols}
@@ -221,7 +199,7 @@ cursor=${JSON.stringify(this.cursor,null,2)}
 cursorPos = ${this.cursorPos}
 docSize = ${this.docSize}
 **********************\n`)
-
+*/
     //let lines0 = this.reloadLinesFAST(this.viewStart,this.lastviewStart)
     //console.log(`lines0 = ${JSON.stringify(lines0,null,2)}`)
   }
@@ -231,9 +209,9 @@ docSize = ${this.docSize}
       return
     }
     if (this.ddll.msetTree.toList2){
-      console.log(`toList2=${JSON.stringify(this.ddll.msetTree.toList2())}`)
+      //console.log(`toList2=${JSON.stringify(this.ddll.msetTree.toList2())}`)
     }
-    console.log(`wo=${this.viewStart} lwo=${this.viewEnd} cursorPos=${this.cursorPos}\nds=${this.docSize} rows=${this.rows} cols=${this.cols}\nrowOffset=${this.rowOffset} colOffset=${this.colOffset}`)
+    //console.log(`wo=${this.viewStart} lwo=${this.viewEnd} cursorPos=${this.cursorPos}\nds=${this.docSize} rows=${this.rows} cols=${this.cols}\nrowOffset=${this.rowOffset} colOffset=${this.colOffset}`)
   }
 /*
   moveCursor(k){
@@ -436,7 +414,8 @@ docSize = ${this.docSize}
   }
 
 
-
+  //FIXME: this and moveCursorDown don't readjust colOffset to bring cursor back into view if scrolling from a
+  // long line to a short line
   moveCursorUp(){
     /*
       This is an optimally efficient implementation of the moveCursorUp
@@ -496,21 +475,21 @@ docSize = ${this.docSize}
       // once again we start by getting the current row and column of the cursor
       // we really should cache this!!
       const [row,col] = this.getVisRowColFAST(this.cursorPos)
-      console.log(`row col = ${row} ${col}`)
+      //console.log(`row col = ${row} ${col}`)
 
       // now we pull in the previous line
       // viewStart-1 is the position at the end of the previous line
       // and getLineContainingPosFAST will pull in that entire line
       // as the CR at position viewStart-1 is considered to be the end of a line
       const [line] = this.getLineContainingPosFAST(this.viewStart-1)
-      console.log(`new line is ${JSON.stringify(line,null,2)}`)
+      //console.log(`new line is ${JSON.stringify(line,null,2)}`)
 
       // move the viewStart to the beginning of the previous line
       this.viewStart -= line.length + 1
 
       // Next we adjust the cursor position
       const firstLineLen = line.length+1
-      console.log(`lines=${JSON.stringify(this.lines,null,2)}`)
+      //console.log(`lines=${JSON.stringify(this.lines,null,2)}`)
       const newRow = row - 1
       const newCol = Math.min(col,line.length)
       this.cursor = [newRow,newCol]
@@ -519,7 +498,7 @@ docSize = ${this.docSize}
           this.cursorPos - col   // move to beginning of the current line
           - (line.length+1)      // move to the beginning of previous line
           + newCol               // move to the appropriate column
-      console.log(`cp=${this.cursorPos}`)
+      //console.log(`cp=${this.cursorPos}`)
 
       if (this.lines.length==this.rows){
         // if the view is full, then move the viewEnd up
@@ -683,8 +662,8 @@ getPosFAST(row,col) {
   // this is used when making a mouse click to determine the position
   // in the document, so the row could be too small or too large
   // as could the column. We begin by normalizing the row value
-  console.log(`getPosFAST(${row},${col})`)
-  this.printState()
+  //console.log(`getPosFAST(${row},${col})`)
+  //this.printState()
 
   if (row<0) {
     row=0
@@ -746,8 +725,8 @@ getPosFAST(row,col) {
     // so anything in the first row of the view has row=0
 
     // We assume that pos is in the viewing window
-    console.log(`in getVisRowColFast ${pos}`)
-    this.printState()
+    //console.log(`in getVisRowColFast ${pos}, range ${this.viewStart} ${this.viewEnd}`)
+    //this.printState()
 
     if (pos<this.viewStart || pos > this.viewEnd){
       throw new Error(`call to getVisRowColFast(${pos}) out of range [${this.viewStart},${this.viewEnd}]`)
@@ -781,7 +760,7 @@ getPosFAST(row,col) {
       if (row >= this.lines.length) {
         throw new Error(`gvrcF(${pos}) vs=${JSON.stringify(this.lines,null,2)}`)
       }
-      console.log(`charsToGo=${charsToGo} row=${row} line=${this.lines[row]}`)
+      //console.log(`charsToGo=${charsToGo} row=${row} line=${this.lines[row]}`)
       //console.log(JSON.stringify([row,charsToGo,this.lines[row]],null,2))
       const line = this.lines[row]
       if (charsToGo > line.length) {
@@ -792,7 +771,7 @@ getPosFAST(row,col) {
         return [row,col]
       }
     }
-    console.log(`in getVisRowCallFast(${pos}) row=${row} charsToGo=${charsToGo} ERROR?? `)
+    //console.log(`in getVisRowCallFast(${pos}) row=${row} charsToGo=${charsToGo} ERROR?? `)
     return [row,0]
     /*
     let lines = this.lines
@@ -924,16 +903,12 @@ getPosFAST(row,col) {
     let endPos = this.viewEnd
     //console.log(`reloadLinesFAST(${startPos},${endPos})`)
     //console.log(JSON.stringify(this.ddll_lines(),null,2))
-    this.printState()
+    //this.printState()
 
-    // first we handle a special case where the document is empty
-    if (this.docSize==0){
+    // first we handle a special case where the document is empty, or the view is about to become empty
+    if (this.docSize==0 || startPos == endPos){
       this.lines = [""]
       return
-    }
-
-    if (startPos == endPos){
-      throw new Error(`reloadLinesFAST has an empty view and docSize=${this.docSize}>0`)
     }
 
     // now we know the document is non-empty
@@ -1055,7 +1030,7 @@ getPosFAST(row,col) {
     let p=pos-1
     while (p>=0){
       let c = this.getNthElement(p)
-      console.log(`pos=${pos} p=${p} c=${c} line="${line}"`)
+      //console.log(`pos=${pos} p=${p} c=${c} line="${line}"`)
       if (c=='\n'){
         break;
       } else {
@@ -1063,18 +1038,18 @@ getPosFAST(row,col) {
         p=p-1
       }
     }
-    console.log(`after loop p=${p}`)
+    //console.log(`after loop p=${p}`)
     // the loop above stops when p=-1 or when the character at pos p is CR
     // in either case the beginning of the line is a position p+1
     const lineStart = p+1
-    console.log(`lineStart=${lineStart}`)
+    //console.log(`lineStart=${lineStart}`)
 
     // then we can forward looking for a CR or the end of the document
     // add add those elements to the end of the line
     let q = pos
     while(q<this.docSize){
       let c = this.getNthElement(q)
-      console.log(`q=${q} c=${c} `)
+      //console.log(`q=${q} c=${c} `)
       if (c=='\n'){
         // this is the end of the line
         break
@@ -1083,7 +1058,7 @@ getPosFAST(row,col) {
         q=q+1
       }
     }
-    console.log(`after q loop q=${q}`)
+    //console.log(`after q loop q=${q}`)
     // the loop above terminates when q==this.docSize or
     // when the character at position q is a newline
     // in either case the end of the line is position q
@@ -1165,13 +1140,130 @@ getPosFAST(row,col) {
     if (this.cursor[1]<this.colOffset) {
       this.colOffset = Math.max(0,this.cursor[1]-this.scrollOffset)
     } else if (this.cursor[1]>=this.colOffset+this.cols){
-      this.colOffset = Math.max(0,this.cursor[1]-this.scrollOffset)
+      this.colOffset = Math.max(0,this.cursor[1]-this.scEzrollOffset)
     }
   }
 */
 
+  insertionLogic(char, pos, isMe){
+    // if isMe === true, then pos is this.cursorPos: our own cursor. if isMe === false, then pos is someone else's
+    // cursor position: the one who is doing the operation.
 
-  insertCharAtCursorPos(char){
+    if(!isMe){
+      var [ownRow, ownCol] = this.getVisRowColFAST(this.cursorPos)
+
+      if(pos <= this.cursorPos)
+        this.cursorPos++
+    }
+
+    // take note of what column and row we're in, so we can insert the new character
+    const [row, col] = this.getVisRowColFAST(pos)
+
+    // next we update the viewStart and viewEnd as needed
+    // and potentially this.lines .....
+    if (char != '\n') {
+      if(!isMe && row === ownRow && pos <= this.cursorPos &&
+          ((this.colOffset > 0 && col <= this.colOffset) // the other cursor is at or before the left edge of our view, excluding when our colOffset is 0
+              || ownCol - this.colOffset === this.cols) // our cursor is at right edge of our screen
+      ){
+        this.colOffset++
+      }
+      // if the character is not a newline
+      // it just increases the viewEnd
+      this.viewEnd += 1
+
+      // insert the character at the proper row and column
+      this.lines[row] = this.lines[row].slice(0, col) + char + this.lines[row].slice(col)
+
+    } else {
+      // inserted character is a newline
+      const split1 = this.lines[row].slice(0, col)
+      const split2 = this.lines[row].slice(col)
+
+      if(!isMe && row === ownRow && pos <= this.cursorPos){
+        this.colOffset = Math.max(this.colOffset - split1.length, 0)
+      }
+
+      if (this.lines.length < this.rows) {
+        // if the character is a newline, but this.lines isn't full
+        // we don't have to remove any lines from this.lines
+        this.viewEnd += 1
+
+        // split the line at the specified row/col and splice in the two new lines
+        this.lines[row] = split2
+        this.lines.splice(row, 0, split1)
+
+      } else {
+        // the character is a newline, and this.lines is full
+        if(isMe) {
+          // we are the ones inserting a newline, not someone else
+          // char=='\n' and this.lines.length == this.rows
+          // in this case we need to decrease this.viewEnd since a new row
+          // has been added and it will push off the last row
+          const lastLine = this.lines[this.rows - 1]
+          if (this.cursorPos < this.viewEnd - lastLine.length) { // not last line
+            // this is the case that the CR just pushes the last line off the screen
+            // and so the viewEnd moves past each character on the last line
+            // and the CR at the end of the second to the last line
+            // but we also added a CR earlier so we just subtract lastLine.length
+            this.viewEnd -= lastLine.length
+
+            this.lines.pop()
+            this.lines[row] = split2
+            this.lines.splice(row, 0, split1)
+
+          } else { //last line
+            // in this case, the user is inserting a CR on the last line in the
+            // viewing window and we will need to split the last line into two
+            // and remove the first line so that the cursor stays in the view
+            this.viewEnd += 1  // account for the new CR
+            this.viewStart += this.lines[0].length + 1
+
+            this.lines[row] = split1
+            this.lines.shift()
+            this.lines.push(split2)
+          }
+        } else {
+          // another user is inserting a newline
+          if(pos <= this.cursorPos){
+            // move all on-screen characters before the other user's cursor up by one line
+            this.viewEnd++
+
+            // if the other user's cursor is on the first line of this.lines, viewStart moves
+            // past the characters before the other user's cursor, plus the newline that the other user just inserted.
+            // if the other user's cursor is not on the first line, viewStart moves past the entire first line, plus
+            // the newline at the end of the first line.
+            this.viewStart++ // account for the newline
+            if(row === 0) {
+              this.viewStart += split1.length
+            } else {
+              this.viewStart += this.lines[0].length
+            }
+
+            this.lines[row] = split2
+            this.lines.splice(row, 0, split1)
+            this.lines.shift()
+          } else if(pos < this.viewEnd) {
+            // move all on-screen characters after the other user's cursor down by one line
+            if(row === this.lines.length - 1) {
+              this.viewEnd -= split2.length
+            } else {
+              // the viewEnd moves past each character on the last line
+              // and the CR at the end of the second to the last line
+              // but we also added a CR earlier so we just subtract lastLine.length
+              this.viewEnd -= this.lines[this.lines.length - 1].length
+            }
+
+            this.lines[row] = split2
+            this.lines.splice(row, 0, split1)
+            this.lines.pop()
+          }
+        }
+      }
+    }
+  }
+
+  insertCharAtCursorPos(char) {
     // this adjusts the view based on which character we insert
     // inserting a newline character can change the viewEnd
     // and the cursor always changes.
@@ -1180,54 +1272,15 @@ getPosFAST(row,col) {
 
     // first we insert the character into the underlying ddll tree
     // this will also send the operation to all collaborators
-    this.ddll.msetTree.insert(this.cursorPos,char)
+    this.ddll.msetTree.insert(this.cursorPos, char)
 
     // this increases the document size
-    this.docSize+=1
+    this.docSize += 1
 
-    // next we update the viewStart and viewEnd as needed
-    // and potentially this.lines .....
-    if (char != '\n'){
-      // if the character is not a newline
-      // it just increases the viewEnd and cursor
-      this.viewEnd +=1
-      // also we could insert the character at the proper row and column
-      // but for now we don't do that and just go back to ddll for that
-    } else if (this.lines.length < this.rows) {
-      // if the character is a newline, but this.lines isn't full
-      // we don't have to remove any lines from this.lines
-      this.viewEnd +=1
-      // also we could split the line at the specified row/col
-      // and splice in the two new lines,
-      // but we don't do that yet...
+    this.insertionLogic(char, this.cursorPos, true)
 
-    } else { // char=='\n' and this.lines.length == this.rows
-      // in this case we need to decrease this.viewEnd since a new row
-      // has been added and it will push off the last row
-      const lastLine = this.lines[this.rows-1]
-      if (this.cursorPos < this.viewEnd-lastLine.length){
-        // this is the case that the CR just pushes the last line off the screen
-        // and so the viewEnd moves past each character on the last line
-        // and the CR at the end of the second to the last line
-        // but we also added a CR earlier so we just subtract lastLine.length
-       this.viewEnd -= lastLine.length
-      } else {
-      // in this case, the user is inserting a CR on the last line in the
-      // viewing window and we will need to split the last line into two
-      // and remove the first line so that the cursor stays in the view
-      this.viewEnd  += 1  // account for the new CR
-      this.viewStart += this.lines[0].length+1
-      }
-    }
-      // finally we adjust the cursor position..
-      //this.printOffsetData()
-      // we can cache this.lines so we don't need to keep reloading it...
-      this.reloadLinesFAST()
-      //this.printState('before mcr')
-      this.moveCursorRight()
-      //this.printState('after mcr')
-      //console.log("character has been inserted!")
-      //this.printState()
+    // finally we adjust the cursor position..
+    this.moveCursorRight()
   }
 
   removeCharBeforeCursorPos(){
@@ -1255,10 +1308,14 @@ getPosFAST(row,col) {
     // the cursor position is one smaller also
     this.cursorPos -= 1
 
-    //this.viewEnd -= 1
-    //this.printOffsetData()
+    this.deletionLogic(char, this.cursorPos, true)
+  }
 
-    if (this.cursorPos < this.viewStart){
+  deletionLogic(char, pos, isMe){
+    // if isMe === true, then pos is this.cursorPos: our own cursor. if isMe === false, then pos is someone else's
+    // cursor position: the one who is doing the operation.
+
+    if (pos === this.viewStart - 1){
       // this happens if the user was at the beginning of the first line of the view
       // and deleted the previous character by hitting backspace
       // the cursor is now at the end of what was the previous line
@@ -1266,37 +1323,134 @@ getPosFAST(row,col) {
       // and so that previous line now becomes visible
       //console.log("We are pulling in a new line!")
       const [line,startPos,endPos]
-          = this.getLineContainingPosFAST(this.cursorPos)
+          = this.getLineContainingPosFAST(pos)
+
+      if(isMe) {
+        // this is our own operation.
+        // we need to adjust the column offset as the cursor is now at the end of the first line in the view
+        this.colOffset = Math.max(0, (line.length - this.lines[0].length - this.cols) + 1)
+      }else {
+        //this is someone else's operation
+        const [myCursorRow, myCursorCol] = this.getVisRowColFAST(this.cursorPos)
+        this.cursorPos -= 1
+        if (myCursorRow === 0 && pos <= this.cursorPos) {
+          //our cursor is on the first row, at or after the other's cursor.
+          //So, in order to keep our cursor on screen, we have to adjust this.colOffset
+
+          const lengthOfNewlyPulledInLine = line.length - this.lines[0].length
+          if(this.colOffset > 0){
+            this.colOffset += lengthOfNewlyPulledInLine
+          } else {
+            this.colOffset += Math.max(0, (lengthOfNewlyPulledInLine - (this.cols - myCursorCol)) + 1)
+          }
+        }
+      }
+
       // the beginning of this new line is the new beginning of our view
       this.viewStart = startPos
+      // due to the deletion, the last character visible on screen now has an index of one less
+      this.viewEnd -= 1;
+
+      this.lines[0] = line
       // note that we have simply lengthened the first line of this.lines
       // so we don't need to remove any elements from the end!
-      //this.printOffsetData()
     } else if (char=='\n'){
-      // this is the case where we are deleting a CR between two lines which
-      // are in this.lines. They will then be merged and we need to
-      // pull in another line either at the end if possible
+      if(pos === this.viewEnd && this.lines.length === this.rows) {
+        // this is someone else's operation, and they were at the beginning of the line right below our view
+        // when they deleted the newline (placing them at our viewEnd now).
+
+        // Update the last line on our screen
+        const [lastLine,startP,endP] = this.getLineContainingPosFAST(this.viewEnd)
+
+        this.lines[this.lines.length - 1] = lastLine
+        this.viewEnd = endP
+        return
+      }
+
+      // this is the case where a user is deleting a CR between two lines which
+      // are in this.lines. The two lines will then be merged and we need to
+      // pull in another line from either the top or the bottom, if possible,
       // and adjust viewEnd accordingly
-      if (this.viewEnd < this.docSize){
-        // pull in another line into the buffer and adjust viewEnd
+      const [row,col] = this.getVisRowColFAST(pos)
+
+      // adjust column offset if necessary
+      if(isMe) {
+        if (col > this.colOffset + this.cols) {
+          // if our cursor is beyond the right edge of our screen, increase our colOffset so we can see our cursor
+          this.colOffset = (col - this.cols) + 1
+        }
+      } else {
+        //this is another user's operation.
+        // if their cursor was on or before ours before the deletion, and if both cursors were on the same row
+        // before the deletion, then the deletion operation potentially caused our cursor to move beyond the right
+        // edge of our screen
+        const [ownRow, ownCol] = this.getVisRowColFAST(this.cursorPos)
+
+        if ((pos < this.cursorPos && row === ownRow - 1) &&
+            (this.colOffset > 0 || ownCol + this.lines[row].length > this.cols)) {
+
+          //if our colOffset was greater than 0, or if after the deletion our line is longer than can fit on screen,
+          // adjust colOffset to keep our cursor in the same column that it's in
+          this.colOffset += this.lines[row].length
+        }
+      }
+
+      // The cursor was at the beginning of this.lines[row+1] before the deletion was performed.
+      // After the deletion, the cursor has moved up to this.lines[row]. So this.lines[row+1] must be merged onto the
+      // end of this.lines[row], the original this.lines[row+1] deleted, and all subsequent lines shifted up one
+      // position to fill the space.
+      this.lines[row] += this.lines[row + 1]
+      this.lines.splice(row + 1, 1)
+
+      if(!isMe && pos < this.cursorPos && this.lines.length === this.rows - 1 && this.viewStart > 0) {
+        // if it's someone else's operation, and the other cursor is at or before mine, and this.lines were full
+        // before the deletion, and there are lines above our view available for pulling in, then pull in a new
+        // line from the top.
+        const [firstLine,startP,endP] = this.getLineContainingPosFAST(this.viewStart-1)
+
+        this.lines.unshift(firstLine)
+        this.viewStart = startP
+        this.viewEnd -= 1
+      }
+      else if (this.viewEnd < this.docSize){
+        // pull in another line from the bottom into the buffer and adjust viewEnd
         const [lastline,startP,endP]
             = this.getLineContainingPosFAST(this.viewEnd+1)
 
+        this.lines.push(lastline)
         this.viewEnd = endP
       } else {
+        // no more lines left to pull in from the bottom
         this.viewEnd -= 1
       }
-      //this.printOffsetData()
+
+      if(!isMe && pos < this.cursorPos){
+        this.cursorPos -= 1
+      }
     } else {
       // this is the case where we delete a non-CR element in the view
-      // it simply decrements the viewEnd
+      // it removes the deleted element from the current line in the view, and decrements viewEnd
+      const [row,col] = this.getVisRowColFAST(pos)
+
+      if(isMe) {
+        if (col < this.colOffset) {
+          // this happens when we scroll past the left side of the view
+          // and we need to move the view back
+          this.colOffset = Math.max(0, col - this.cols)
+        }
+      } else {
+        // this is someone else's operation
+        if(pos < this.cursorPos){
+          this.cursorPos -= 1
+          if(row === this.getVisRowColFAST(this.cursorPos)[0] && col < this.colOffset) {
+            this.colOffset -= 1
+          }
+      }
+    }
+
+      this.lines[row] = this.lines[row].slice(0, col) + this.lines[row].slice(col + 1)
       this.viewEnd -= 1
     }
-    //console.log("before rlFast")
-    //this.printState()
-    this.reloadLinesFAST()
-    //console.log("after_rlF_returning from rCBCP")
-    //this.printState()
   }
 
   setRedrawCanvas(redraw){

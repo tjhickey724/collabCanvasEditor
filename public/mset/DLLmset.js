@@ -61,8 +61,8 @@ class DLLmset{
     this.emptyNetwork = {hide:(x)=>null,insert:(x)=>null,extend:(x)=>null}
     this.network = network || this.emptyNetwork
 
-    this.insertCallback = function(k,elt,user){return; console.log("insert("+k+","+elt+","+user+")")}
-    this.deleteCallback = function(k,elt,user){return; console.log("delete("+k+","+elt+","+user+")")}
+    this.insertCallback = function(k,elt,user){return;}
+    this.deleteCallback = function(k,elt,user){return;}
 
 
     // the rest of this constructor initializes the
@@ -1011,7 +1011,7 @@ function compareNodes(x,y){
   } else if ((typeof(x.user)=='number') && (typeof(y.user)=='number')){
     return x.user-y.user
   } else {
-    console.dir([x,y])
+    //console.dir([x,y])
     throw new Error("trying to compare nodes with no user number!")
   }
 }
