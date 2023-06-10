@@ -20,7 +20,8 @@ document stays completely on everyone's screen! Clearly it is not yet at the Min
 
 ## Design
 
-The editor uses the MSET technology and it currently allows the user to insert printable characters,
+The editor uses the [MSET technology](https://github.com/tjhickey724/MSET) 
+and it currently allows the user to insert printable characters,
 to use the arrow keys, and to click with the mouse to change the cursor position. It does not yet have
 a way to slide the view up and down the document with the mouse.
 
